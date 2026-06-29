@@ -148,6 +148,7 @@
     var importFileEl = document.getElementById('import-file');
     var saveImageBtn = document.getElementById('save-image-btn');
     const DEFAULT_DURATION_MINUTES = 40;
+    const STORAGE_KEY = 'classSchedule:v1';
 
     // --- 【核心修改】扩展颜色库至24种 ---
     const courseColors = [
@@ -157,6 +158,7 @@
     ];
     let courseColorMap = {};
     let courseDurationMap = {};
+    let isLoadingData = false;
 
     // --- 【核心重构】全新的、保证颜色唯一的“颜色门卫”函数 ---
     function assignOrGetCourseColor(courseName) {
@@ -275,6 +277,46 @@
         });
     }
 
+    function serializeSchedule() {
+        const calendarEvents = calendar.getEvents().map(event => ({
+            title: event.title,
+            start: event.startStr,
+            end: event.endStr,
+        }));
+        const availableCourses = Array.from(containerEl.children).map(el => ({
+            title: getCourseNameFromElement(el),
+            durationMinutes: getDurationFromElement(el)
+        }));
+
+        return { calendarEvents, availableCourses, courseColorMap, courseDurationMap };
+    }
+
+    function saveState() {
+        if (isLoadingData) {
+            return;
+        }
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(serializeSchedule()));
+        } catch (error) {
+            console.warn('自动保存失败:', error);
+        }
+    }
+
+    function loadSavedState() {
+        try {
+            const savedData = localStorage.getItem(STORAGE_KEY);
+            if (!savedData) {
+                return false;
+            }
+            loadData(JSON.parse(savedData), { persist: false });
+            console.log('已恢复本地自动保存的课程表。');
+            return true;
+        } catch (error) {
+            console.warn('恢复本地课程表失败:', error);
+            return false;
+        }
+    }
+
     addCourseBtn.addEventListener('click', function() {
       const courseName = prompt('请输入新课程的名称:');
       if (courseName && courseName.trim() !== '') {
@@ -292,6 +334,7 @@
         setCourseDuration(trimmedName, durationMinutes);
         const newCourseEl = createCourseElement(trimmedName, newColor, durationMinutes);
         containerEl.appendChild(newCourseEl);
+        saveState();
       }
     });
 
@@ -327,23 +370,14 @@
           courseEl.style.borderColor = newColor;
           courseEl.dataset.color = newColor;
           updateScheduledCourse(oldName, trimmedNewName, newDuration);
+          saveState();
         }
       }
     });
 
     // --- 导入/导出逻辑 ---
     exportBtn.addEventListener('click', function() {
-        const calendarEvents = calendar.getEvents().map(event => ({
-            title: event.title,
-            start: event.startStr,
-            end: event.endStr,
-        }));
-        const availableCourses = Array.from(containerEl.children).map(el => ({
-            title: getCourseNameFromElement(el),
-            durationMinutes: getDurationFromElement(el)
-        }));
-
-        const dataToExport = JSON.stringify({ calendarEvents, availableCourses, courseColorMap, courseDurationMap }, null, 2);
+        const dataToExport = JSON.stringify(serializeSchedule(), null, 2);
         const blob = new Blob([dataToExport], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -356,69 +390,79 @@
     });
 
     // --- 【核心重构】导入数据处理流程 ---
-    function loadData(data) {
+    function loadData(data, options = {}) {
+        const shouldPersist = options.persist !== false;
         if (!data.calendarEvents || !data.availableCourses) {
             throw new Error('无效的文件格式');
         }
 
-        // 1. 清理当前状态
-        calendar.removeAllEvents();
-        containerEl.innerHTML = '';
-        courseColorMap = {}; // 清空颜色映射是关键
-        courseDurationMap = {};
+        isLoadingData = true;
+        try {
+            // 1. 清理当前状态
+            calendar.removeAllEvents();
+            containerEl.innerHTML = '';
+            courseColorMap = {}; // 清空颜色映射是关键
+            courseDurationMap = {};
 
-        // 2. 收集所有唯一的课程名称
-        const allCourseNames = new Set([
-            ...data.availableCourses.map(c => c.title.trim()),
-            ...data.calendarEvents.map(e => e.title.trim())
-        ]);
+            // 2. 收集所有唯一的课程名称
+            const allCourseNames = new Set([
+                ...data.availableCourses.map(c => c.title.trim()),
+                ...data.calendarEvents.map(e => e.title.trim())
+            ]);
 
-        // 3. 为所有课程重新建立一个保证无冲突的颜色映射
-        allCourseNames.forEach(name => {
-            assignOrGetCourseColor(name);
-        });
+            // 3. 为所有课程重新建立一个保证无冲突的颜色映射
+            allCourseNames.forEach(name => {
+                assignOrGetCourseColor(name);
+            });
 
-        data.availableCourses.forEach(courseData => {
-            const name = courseData.title.trim();
-            const savedDuration = courseData.durationMinutes || data.courseDurationMap?.[name] || data.settings?.durationMinutes;
-            if (savedDuration) {
-                setCourseDuration(name, savedDuration);
-            }
-        });
-        data.calendarEvents.forEach(eventData => {
-            const name = eventData.title.trim();
-            if (!courseDurationMap[name]) {
-                const start = eventData.start ? new Date(eventData.start) : null;
-                const end = eventData.end ? new Date(eventData.end) : null;
-                const eventDuration = start && end ? Math.round((end - start) / 60000) : null;
-                const savedDuration = data.courseDurationMap?.[name] || eventDuration || data.settings?.durationMinutes;
-                setCourseDuration(name, savedDuration);
-            }
-        });
-        allCourseNames.forEach(name => {
-            if (!courseDurationMap[name]) {
-                setCourseDuration(name, DEFAULT_DURATION_MINUTES);
-            }
-        });
+            data.availableCourses.forEach(courseData => {
+                const name = courseData.title.trim();
+                const savedDuration = courseData.durationMinutes || data.courseDurationMap?.[name] || data.settings?.durationMinutes;
+                if (savedDuration) {
+                    setCourseDuration(name, savedDuration);
+                }
+            });
+            data.calendarEvents.forEach(eventData => {
+                const name = eventData.title.trim();
+                if (!courseDurationMap[name]) {
+                    const start = eventData.start ? new Date(eventData.start) : null;
+                    const end = eventData.end ? new Date(eventData.end) : null;
+                    const eventDuration = start && end ? Math.round((end - start) / 60000) : null;
+                    const savedDuration = data.courseDurationMap?.[name] || eventDuration || data.settings?.durationMinutes;
+                    setCourseDuration(name, savedDuration);
+                }
+            });
+            allCourseNames.forEach(name => {
+                if (!courseDurationMap[name]) {
+                    setCourseDuration(name, DEFAULT_DURATION_MINUTES);
+                }
+            });
 
-        // 4. 使用这个全新的、干净的颜色映射来渲染页面
-        data.calendarEvents.forEach(eventData => {
-            const name = eventData.title.trim();
-            const color = courseColorMap[name];
-            const durationMinutes = courseDurationMap[name] || DEFAULT_DURATION_MINUTES;
-            const normalizedEvent = { ...eventData };
-            if (normalizedEvent.start) {
-                normalizedEvent.end = addMinutes(new Date(normalizedEvent.start), durationMinutes);
-            }
-            calendar.addEvent({ ...normalizedEvent, backgroundColor: color, borderColor: color });
-        });
-        data.availableCourses.forEach(courseData => {
-            const name = courseData.title.trim();
-            const color = courseColorMap[name];
-            const durationMinutes = courseDurationMap[name] || DEFAULT_DURATION_MINUTES;
-            const courseEl = createCourseElement(name, color, durationMinutes);
-            containerEl.appendChild(courseEl);
-        });
+            // 4. 使用这个全新的、干净的颜色映射来渲染页面
+            data.calendarEvents.forEach(eventData => {
+                const name = eventData.title.trim();
+                const color = courseColorMap[name];
+                const durationMinutes = courseDurationMap[name] || DEFAULT_DURATION_MINUTES;
+                const normalizedEvent = { ...eventData };
+                if (normalizedEvent.start) {
+                    normalizedEvent.end = addMinutes(new Date(normalizedEvent.start), durationMinutes);
+                }
+                calendar.addEvent({ ...normalizedEvent, backgroundColor: color, borderColor: color });
+            });
+            data.availableCourses.forEach(courseData => {
+                const name = courseData.title.trim();
+                const color = courseColorMap[name];
+                const durationMinutes = courseDurationMap[name] || DEFAULT_DURATION_MINUTES;
+                const courseEl = createCourseElement(name, color, durationMinutes);
+                containerEl.appendChild(courseEl);
+            });
+        } finally {
+            isLoadingData = false;
+        }
+
+        if (shouldPersist) {
+            saveState();
+        }
     }
 
     importFileEl.addEventListener('change', function(e) {
@@ -500,13 +544,17 @@
       drop: function(info) {
         if (checkbox.checked) {
           info.draggedEl.parentNode.removeChild(info.draggedEl);
+          saveState();
         }
       },
       eventClick: function(info) {
         if (confirm("要删除课程 '" + info.event.title + "' 吗?")) {
           info.event.remove();
         }
-      }
+      },
+      eventAdd: saveState,
+      eventChange: saveState,
+      eventRemove: saveState
     });
 
     calendar.render();
@@ -555,7 +603,9 @@
         }
     }
 
-    autoLoadSchedule();
+    if (!loadSavedState()) {
+        autoLoadSchedule();
+    }
   });
 </script>
 
