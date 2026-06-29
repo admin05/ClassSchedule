@@ -1,0 +1,13 @@
+.DS_Store
+Thumbs.db
+
+# Local schedule exports may contain personal information.
+课程表.json
+我的课程表.png
+*.log
+
+# Dependency and build output folders, in case the project grows later.
+node_modules/
+dist/
+build/
+.cache/

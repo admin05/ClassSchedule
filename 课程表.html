@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>课程表</title>
+
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.17/main.min.css" rel="stylesheet" />
+
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    display: flex;
+    padding: 0;
+    margin: 0;
+  }
+  #external-events {
+    width: 220px;
+    padding: 0 20px;
+    border-right: 1px solid #ddd;
+    background-color: #f7f7f7;
+    height: 100vh;
+  }
+  #external-events h4 {
+    margin-top: 20px;
+    font-size: 16px;
+    text-align: center;
+  }
+  #external-events .fc-event {
+    margin: 10px 0;
+    cursor: grab;
+    padding: 5px 8px;
+    color: white;
+    border-radius: 4px;
+    font-size: 14px;
+    text-shadow: 1px 1px 1px rgba(0,0,0,0.2);
+  }
+  #calendar-container {
+    flex-grow: 1;
+    padding: 20px;
+    height: 100vh;
+    box-sizing: border-box;
+    background-color: #fff;
+  }
+  #calendar {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  .button-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 15px;
+  }
+  #add-course-btn {
+    grid-column: 1 / -1;
+  }
+  .button-group button, .button-group label {
+    display: block;
+    width: 100%;
+    padding: 8px;
+    background-color: #e9ecef;
+    color: #495057;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    text-align: center;
+    transition: background-color 0.2s, border-color 0.2s;
+  }
+  .button-group button:hover, .button-group label:hover {
+    background-color: #dee2e6;
+    border-color: #adb5bd;
+  }
+  .fc .fc-day-today {
+    background-color: inherit !important;
+  }
+
+  .fc-timegrid-event .fc-event-title {
+    font-size: 18px;
+    font-weight: 500;
+  }
+  .fc-timegrid-event .fc-event-time {
+    font-size: 15px;
+    font-weight: 500;
+  }
+
+</style>
+</head>
+<body>
+
+<div id="external-events">
+  <h4>待排课程</h4>
+
+  <div class="button-group">
+    <button id="add-course-btn">+ 添加课程</button>
+    <button id="export-btn">导出JSON</button>
+    <label for="import-file" class="button-group-label">导入JSON</label>
+    <input type="file" id="import-file" accept=".json" style="display: none;">
+    <button id="save-image-btn">存为图片</button>
+  </div>
+
+  <div id='external-events-list'>
+    <div class='fc-event' title="双击可编辑">语文</div>
+    <div class='fc-event' title="双击可编辑">数学</div>
+    <div class='fc-event' title="双击可编辑">英语</div>
+  </div>
+
+   <p style="margin-top: 20px;">
+      <input type="checkbox" id="drop-remove" />
+      <label for="drop-remove">拖拽后移除</label>
+    </p>
+</div>
+
+<div id="calendar-container">
+  <div id="calendar"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.17/index.global.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    var calendarEl = document.getElementById('calendar');
+    var containerEl = document.getElementById('external-events-list');
+    var checkbox = document.getElementById('drop-remove');
+    var addCourseBtn = document.getElementById('add-course-btn');
+    var exportBtn = document.getElementById('export-btn');
+    var importFileEl = document.getElementById('import-file');
+    var saveImageBtn = document.getElementById('save-image-btn');
+
+    // --- 【核心修改】扩展颜色库至24种 ---
+    const courseColors = [
+        '#e6194b', '#3cb44b', '#ffe119', '#4363d8', '#f58231', '#911eb4', '#46f0f0', '#f032e6',
+        '#bcf60c', '#fabebe', '#008080', '#e6beff', '#9a6324', '#fffac8', '#800000', '#aaffc3',
+        '#808000', '#ffd8b1', '#000075', '#808080', '#000000', '#1f77b4', '#ff7f0e', '#2ca02c'
+    ];
+    let courseColorMap = {};
+
+    // --- 【核心重构】全新的、保证颜色唯一的“颜色门卫”函数 ---
+    function assignOrGetCourseColor(courseName) {
+        // 如果该课程已经有颜色了，直接返回
+        if (courseColorMap[courseName]) {
+            return courseColorMap[courseName];
+        }
+
+        // 如果是新课程，需要分配一个新颜色
+        const usedColors = Object.values(courseColorMap);
+
+        // 1. 优先从预设颜色库里找一个没被用过的
+        for (const color of courseColors) {
+            if (!usedColors.includes(color)) {
+                courseColorMap[courseName] = color;
+                return color;
+            }
+        }
+
+        // 2. 如果预设颜色都用完了（课程种类超过24种），则生成一个随机颜色作为备用
+        let randomColor;
+        do {
+            randomColor = '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
+        } while (usedColors.includes(randomColor)); // 确保随机色也不重复
+
+        courseColorMap[courseName] = randomColor;
+        return randomColor;
+    }
+
+    // --- 左侧列表的管理 ---
+    function createCourseElement(name, color) {
+        const newCourseEl = document.createElement('div');
+        newCourseEl.innerText = name.trim();
+        newCourseEl.className = 'fc-event fc-h-event fc-daygrid-event fc-daygrid-block-event';
+        newCourseEl.style.backgroundColor = color;
+        newCourseEl.style.borderColor = color;
+        newCourseEl.dataset.color = color;
+        newCourseEl.title = '双击可编辑';
+        return newCourseEl;
+    }
+
+    addCourseBtn.addEventListener('click', function() {
+      const courseName = prompt('请输入新课程的名称:');
+      if (courseName && courseName.trim() !== '') {
+        const trimmedName = courseName.trim();
+        // 所有颜色分配都通过“门卫”函数
+        const newColor = assignOrGetCourseColor(trimmedName);
+        const newCourseEl = createCourseElement(trimmedName, newColor);
+        containerEl.appendChild(newCourseEl);
+      }
+    });
+
+    containerEl.addEventListener('dblclick', function(e) {
+      const courseEl = e.target.closest('.fc-event');
+      if (courseEl) {
+        const oldName = courseEl.innerText;
+        const newName = prompt('请修改课程名称:', oldName);
+        if (newName && newName.trim() !== '' && newName.trim() !== oldName) {
+          const trimmedNewName = newName.trim();
+          courseEl.innerText = trimmedNewName;
+          const newColor = assignOrGetCourseColor(trimmedNewName);
+          courseEl.style.backgroundColor = newColor;
+          courseEl.style.borderColor = newColor;
+          courseEl.dataset.color = newColor;
+        }
+      }
+    });
+
+    // --- 导入/导出逻辑 ---
+    exportBtn.addEventListener('click', function() {
+        const calendarEvents = calendar.getEvents().map(event => ({
+            title: event.title,
+            start: event.startStr,
+            end: event.endStr,
+        }));
+        const availableCourses = Array.from(containerEl.children).map(el => ({
+            title: el.innerText
+        }));
+
+        const dataToExport = JSON.stringify({ calendarEvents, availableCourses, courseColorMap }, null, 2);
+        const blob = new Blob([dataToExport], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = '课程表.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    });
+
+    // --- 【核心重构】导入数据处理流程 ---
+    function loadData(data) {
+        if (!data.calendarEvents || !data.availableCourses) {
+            throw new Error('无效的文件格式');
+        }
+
+        // 1. 清理当前状态
+        calendar.removeAllEvents();
+        containerEl.innerHTML = '';
+        courseColorMap = {}; // 清空颜色映射是关键
+
+        // 2. 收集所有唯一的课程名称
+        const allCourseNames = new Set([
+            ...data.availableCourses.map(c => c.title.trim()),
+            ...data.calendarEvents.map(e => e.title.trim())
+        ]);
+
+        // 3. 为所有课程重新建立一个保证无冲突的颜色映射
+        allCourseNames.forEach(name => {
+            assignOrGetCourseColor(name);
+        });
+
+        // 4. 使用这个全新的、干净的颜色映射来渲染页面
+        data.calendarEvents.forEach(eventData => {
+            const color = courseColorMap[eventData.title.trim()];
+            calendar.addEvent({ ...eventData, backgroundColor: color, borderColor: color });
+        });
+        data.availableCourses.forEach(courseData => {
+            const color = courseColorMap[courseData.title.trim()];
+            const courseEl = createCourseElement(courseData.title, color);
+            containerEl.appendChild(courseEl);
+        });
+    }
+
+    importFileEl.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            try {
+                const data = JSON.parse(event.target.result);
+                loadData(data);
+                alert('课表导入成功！');
+            } catch (error) {
+                alert('导入失败: ' + error.message);
+            } finally {
+                e.target.value = '';
+            }
+        };
+        reader.readAsText(file);
+    });
+
+    // --- 保存为图片逻辑 ---
+    saveImageBtn.addEventListener('click', function() {
+      saveImageBtn.innerText = '正在生成...';
+      saveImageBtn.disabled = true;
+      html2canvas(document.getElementById('calendar-container'), {
+          backgroundColor: '#ffffff',
+          scale: 2
+      }).then(canvas => {
+          const a = document.createElement('a');
+          a.href = canvas.toDataURL('image/png');
+          a.download = '我的课程表.png';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          saveImageBtn.innerText = '存为图片';
+          saveImageBtn.disabled = false;
+      }).catch(err => {
+          alert('图片生成失败！');
+          console.error(err);
+          saveImageBtn.innerText = '存为图片';
+          saveImageBtn.disabled = false;
+      });
+    });
+
+
+    // --- FullCalendar 的拖拽和日历配置 ---
+    new FullCalendar.Draggable(containerEl, {
+      itemSelector: '.fc-event',
+      eventData: function(eventEl) {
+        const color = eventEl.dataset.color;
+        return {
+          title: eventEl.innerText.trim(),
+          duration: '00:40:00',
+          backgroundColor: color,
+          borderColor: color
+        };
+      }
+    });
+
+    var calendar = new FullCalendar.Calendar(calendarEl, {
+      headerToolbar: { left: '', center: '', right: '' },
+      slotMinTime: '08:50:00',
+      slotMaxTime: '16:55:00',
+      slotDuration: '00:05:00',
+      hiddenDays: [ 6, 0 ],
+      dayHeaderFormat: { weekday: 'long' },
+      initialView: 'timeGridWeek',
+      locale: 'zh-cn',
+      editable: true,
+      droppable: true,
+      allDaySlot: false,
+      nowIndicator: false,
+      events: [],
+
+      viewDidMount: function(view) {
+        const slots = calendarEl.querySelectorAll('.fc-timegrid-slot');
+        const breakStartTime = '11:20:00';
+        const breakEndTime = '14:30:00';
+
+        slots.forEach(function(slot) {
+          const time = slot.getAttribute('data-time');
+          if (time >= breakStartTime && time < breakEndTime) {
+            const slotRow = slot.closest('tr');
+            if(slotRow) {
+              slotRow.style.display = 'none';
+            }
+          }
+        });
+      },
+
+      drop: function(info) {
+        if (checkbox.checked) {
+          info.draggedEl.parentNode.removeChild(info.draggedEl);
+        }
+      },
+      eventClick: function(info) {
+        if (confirm("要删除课程 '" + info.event.title + "' 吗?")) {
+          info.event.remove();
+        }
+      }
+    });
+
+    calendar.render();
+
+    // 初始化页面时，为默认课程分配颜色
+    function initializeCourseColors() {
+      const courseElements = containerEl.querySelectorAll('.fc-event');
+      courseElements.forEach(el => {
+        const name = el.innerText.trim();
+        const color = assignOrGetCourseColor(name);
+        el.style.backgroundColor = color;
+        el.style.borderColor = color;
+        el.dataset.color = color;
+      });
+    }
+
+    initializeCourseColors();
+
+    async function autoLoadSchedule() {
+        try {
+            const response = await fetch('课程表.json');
+            if (!response.ok) {
+                console.log('未找到 "课程表.json" 文件，加载默认课程表。');
+                return;
+            }
+            const data = await response.json();
+            loadData(data);
+            console.log('成功自动导入 "课程表.json"！');
+        } catch (error) {
+            console.error('自动导入失败:', error);
+        }
+    }
+
+    autoLoadSchedule();
+  });
+</script>
+
+</body>
+</html>
