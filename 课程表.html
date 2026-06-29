@@ -71,6 +71,29 @@
     background-color: #dee2e6;
     border-color: #adb5bd;
   }
+  .duration-control {
+    margin-top: 15px;
+  }
+  .duration-control label {
+    display: block;
+    margin-bottom: 6px;
+    color: #495057;
+    font-size: 14px;
+  }
+  .duration-control input {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    color: #212529;
+    font-size: 14px;
+  }
+  .duration-control input:focus {
+    border-color: #86b7fe;
+    outline: 0;
+    box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.15);
+  }
   .fc .fc-day-today {
     background-color: inherit !important;
   }
@@ -97,6 +120,11 @@
     <label for="import-file" class="button-group-label">导入JSON</label>
     <input type="file" id="import-file" accept=".json" style="display: none;">
     <button id="save-image-btn">存为图片</button>
+  </div>
+
+  <div class="duration-control">
+    <label for="duration-minutes">课程时长（分钟）</label>
+    <input type="number" id="duration-minutes" value="40" min="5" max="240" step="5">
   </div>
 
   <div id='external-events-list'>
@@ -128,6 +156,8 @@
     var exportBtn = document.getElementById('export-btn');
     var importFileEl = document.getElementById('import-file');
     var saveImageBtn = document.getElementById('save-image-btn');
+    var durationInput = document.getElementById('duration-minutes');
+    const DEFAULT_DURATION_MINUTES = 40;
 
     // --- 【核心修改】扩展颜色库至24种 ---
     const courseColors = [
@@ -177,6 +207,29 @@
         return newCourseEl;
     }
 
+    function getCourseDurationMinutes() {
+        const duration = Number.parseInt(durationInput.value, 10);
+        if (Number.isNaN(duration) || duration < 5) {
+            durationInput.value = DEFAULT_DURATION_MINUTES;
+            return DEFAULT_DURATION_MINUTES;
+        }
+        if (duration > 240) {
+            durationInput.value = 240;
+            return 240;
+        }
+        return duration;
+    }
+
+    function formatDuration(minutes) {
+        const hours = Math.floor(minutes / 60).toString().padStart(2, '0');
+        const remainingMinutes = (minutes % 60).toString().padStart(2, '0');
+        return `${hours}:${remainingMinutes}:00`;
+    }
+
+    durationInput.addEventListener('change', function() {
+        getCourseDurationMinutes();
+    });
+
     addCourseBtn.addEventListener('click', function() {
       const courseName = prompt('请输入新课程的名称:');
       if (courseName && courseName.trim() !== '') {
@@ -214,8 +267,11 @@
         const availableCourses = Array.from(containerEl.children).map(el => ({
             title: el.innerText
         }));
+        const settings = {
+            durationMinutes: getCourseDurationMinutes()
+        };
 
-        const dataToExport = JSON.stringify({ calendarEvents, availableCourses, courseColorMap }, null, 2);
+        const dataToExport = JSON.stringify({ calendarEvents, availableCourses, courseColorMap, settings }, null, 2);
         const blob = new Blob([dataToExport], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -231,6 +287,11 @@
     function loadData(data) {
         if (!data.calendarEvents || !data.availableCourses) {
             throw new Error('无效的文件格式');
+        }
+
+        if (data.settings && data.settings.durationMinutes) {
+            durationInput.value = data.settings.durationMinutes;
+            getCourseDurationMinutes();
         }
 
         // 1. 清理当前状态
@@ -311,7 +372,7 @@
         const color = eventEl.dataset.color;
         return {
           title: eventEl.innerText.trim(),
-          duration: '00:40:00',
+          duration: formatDuration(getCourseDurationMinutes()),
           backgroundColor: color,
           borderColor: color
         };
