@@ -34,6 +34,16 @@
     font-size: 14px;
     text-shadow: 1px 1px 1px rgba(0,0,0,0.2);
   }
+  #external-events .course-name {
+    display: block;
+    font-weight: 600;
+  }
+  #external-events .course-duration {
+    display: block;
+    margin-top: 2px;
+    font-size: 12px;
+    opacity: 0.9;
+  }
   #calendar-container {
     flex-grow: 1;
     padding: 20px;
@@ -71,29 +81,6 @@
     background-color: #dee2e6;
     border-color: #adb5bd;
   }
-  .duration-control {
-    margin-top: 15px;
-  }
-  .duration-control label {
-    display: block;
-    margin-bottom: 6px;
-    color: #495057;
-    font-size: 14px;
-  }
-  .duration-control input {
-    box-sizing: border-box;
-    width: 100%;
-    padding: 8px;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
-    color: #212529;
-    font-size: 14px;
-  }
-  .duration-control input:focus {
-    border-color: #86b7fe;
-    outline: 0;
-    box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.15);
-  }
   .fc .fc-day-today {
     background-color: inherit !important;
   }
@@ -122,15 +109,19 @@
     <button id="save-image-btn">存为图片</button>
   </div>
 
-  <div class="duration-control">
-    <label for="duration-minutes">课程时长（分钟）</label>
-    <input type="number" id="duration-minutes" value="40" min="5" max="240" step="5">
-  </div>
-
   <div id='external-events-list'>
-    <div class='fc-event' title="双击可编辑">语文</div>
-    <div class='fc-event' title="双击可编辑">数学</div>
-    <div class='fc-event' title="双击可编辑">英语</div>
+    <div class='fc-event' title="双击可编辑" data-course-name="语文" data-duration-minutes="40">
+      <span class="course-name">语文</span>
+      <span class="course-duration">40 分钟</span>
+    </div>
+    <div class='fc-event' title="双击可编辑" data-course-name="数学" data-duration-minutes="40">
+      <span class="course-name">数学</span>
+      <span class="course-duration">40 分钟</span>
+    </div>
+    <div class='fc-event' title="双击可编辑" data-course-name="英语" data-duration-minutes="40">
+      <span class="course-name">英语</span>
+      <span class="course-duration">40 分钟</span>
+    </div>
   </div>
 
    <p style="margin-top: 20px;">
@@ -156,7 +147,6 @@
     var exportBtn = document.getElementById('export-btn');
     var importFileEl = document.getElementById('import-file');
     var saveImageBtn = document.getElementById('save-image-btn');
-    var durationInput = document.getElementById('duration-minutes');
     const DEFAULT_DURATION_MINUTES = 40;
 
     // --- 【核心修改】扩展颜色库至24种 ---
@@ -166,6 +156,7 @@
         '#808000', '#ffd8b1', '#000075', '#808080', '#000000', '#1f77b4', '#ff7f0e', '#2ca02c'
     ];
     let courseColorMap = {};
+    let courseDurationMap = {};
 
     // --- 【核心重构】全新的、保证颜色唯一的“颜色门卫”函数 ---
     function assignOrGetCourseColor(courseName) {
@@ -196,25 +187,39 @@
     }
 
     // --- 左侧列表的管理 ---
-    function createCourseElement(name, color) {
+    function createCourseElement(name, color, durationMinutes) {
         const newCourseEl = document.createElement('div');
-        newCourseEl.innerText = name.trim();
+        const trimmedName = name.trim();
+        const normalizedDuration = normalizeDurationMinutes(durationMinutes);
+
         newCourseEl.className = 'fc-event fc-h-event fc-daygrid-event fc-daygrid-block-event';
         newCourseEl.style.backgroundColor = color;
         newCourseEl.style.borderColor = color;
         newCourseEl.dataset.color = color;
-        newCourseEl.title = '双击可编辑';
+        newCourseEl.dataset.courseName = trimmedName;
+        newCourseEl.dataset.durationMinutes = normalizedDuration;
+        newCourseEl.title = '双击可编辑名称和时长';
+        newCourseEl.innerHTML = '';
+
+        const nameEl = document.createElement('span');
+        nameEl.className = 'course-name';
+        nameEl.innerText = trimmedName;
+
+        const durationEl = document.createElement('span');
+        durationEl.className = 'course-duration';
+        durationEl.innerText = `${normalizedDuration} 分钟`;
+
+        newCourseEl.appendChild(nameEl);
+        newCourseEl.appendChild(durationEl);
         return newCourseEl;
     }
 
-    function getCourseDurationMinutes() {
-        const duration = Number.parseInt(durationInput.value, 10);
+    function normalizeDurationMinutes(value) {
+        const duration = Number.parseInt(value, 10);
         if (Number.isNaN(duration) || duration < 5) {
-            durationInput.value = DEFAULT_DURATION_MINUTES;
             return DEFAULT_DURATION_MINUTES;
         }
         if (duration > 240) {
-            durationInput.value = 240;
             return 240;
         }
         return duration;
@@ -226,17 +231,66 @@
         return `${hours}:${remainingMinutes}:00`;
     }
 
-    durationInput.addEventListener('change', function() {
-        getCourseDurationMinutes();
-    });
+    function addMinutes(date, minutes) {
+        return new Date(date.getTime() + minutes * 60 * 1000);
+    }
+
+    function getCourseNameFromElement(courseEl) {
+        return courseEl.dataset.courseName || courseEl.querySelector('.course-name')?.innerText.trim() || courseEl.innerText.trim();
+    }
+
+    function getDurationFromElement(courseEl) {
+        const courseName = getCourseNameFromElement(courseEl);
+        return normalizeDurationMinutes(courseEl.dataset.durationMinutes || courseDurationMap[courseName]);
+    }
+
+    function promptCourseDuration(defaultDuration) {
+        const answer = prompt('请输入课程时长（分钟，5-240）:', normalizeDurationMinutes(defaultDuration));
+        if (answer === null) {
+            return null;
+        }
+        return normalizeDurationMinutes(answer);
+    }
+
+    function setCourseDuration(courseName, durationMinutes) {
+        courseDurationMap[courseName] = normalizeDurationMinutes(durationMinutes);
+    }
+
+    function hasCourseName(courseName, ignoredEl) {
+        return Array.from(containerEl.children).some(el => {
+            return el !== ignoredEl && getCourseNameFromElement(el) === courseName;
+        });
+    }
+
+    function updateScheduledCourse(oldName, newName, durationMinutes) {
+        const normalizedDuration = normalizeDurationMinutes(durationMinutes);
+        calendar.getEvents().forEach(event => {
+            if (event.title !== oldName) {
+                return;
+            }
+            event.setProp('title', newName);
+            if (event.start) {
+                event.setEnd(addMinutes(event.start, normalizedDuration));
+            }
+        });
+    }
 
     addCourseBtn.addEventListener('click', function() {
       const courseName = prompt('请输入新课程的名称:');
       if (courseName && courseName.trim() !== '') {
         const trimmedName = courseName.trim();
+        if (hasCourseName(trimmedName)) {
+          alert('该课程已存在，请直接双击现有课程修改时长。');
+          return;
+        }
+        const durationMinutes = promptCourseDuration(DEFAULT_DURATION_MINUTES);
+        if (durationMinutes === null) {
+          return;
+        }
         // 所有颜色分配都通过“门卫”函数
         const newColor = assignOrGetCourseColor(trimmedName);
-        const newCourseEl = createCourseElement(trimmedName, newColor);
+        setCourseDuration(trimmedName, durationMinutes);
+        const newCourseEl = createCourseElement(trimmedName, newColor, durationMinutes);
         containerEl.appendChild(newCourseEl);
       }
     });
@@ -244,15 +298,35 @@
     containerEl.addEventListener('dblclick', function(e) {
       const courseEl = e.target.closest('.fc-event');
       if (courseEl) {
-        const oldName = courseEl.innerText;
+        const oldName = getCourseNameFromElement(courseEl);
+        const oldDuration = getDurationFromElement(courseEl);
         const newName = prompt('请修改课程名称:', oldName);
-        if (newName && newName.trim() !== '' && newName.trim() !== oldName) {
+        if (newName && newName.trim() !== '') {
           const trimmedNewName = newName.trim();
-          courseEl.innerText = trimmedNewName;
+          if (trimmedNewName !== oldName && hasCourseName(trimmedNewName, courseEl)) {
+            alert('该课程已存在，请使用另一个课程名称。');
+            return;
+          }
+          const newDuration = promptCourseDuration(oldDuration);
+          if (newDuration === null) {
+            return;
+          }
+          if (trimmedNewName !== oldName) {
+            courseColorMap[trimmedNewName] = courseColorMap[oldName];
+            delete courseDurationMap[oldName];
+            delete courseColorMap[oldName];
+          }
           const newColor = assignOrGetCourseColor(trimmedNewName);
+          setCourseDuration(trimmedNewName, newDuration);
+
+          courseEl.dataset.courseName = trimmedNewName;
+          courseEl.dataset.durationMinutes = newDuration;
+          courseEl.querySelector('.course-name').innerText = trimmedNewName;
+          courseEl.querySelector('.course-duration').innerText = `${newDuration} 分钟`;
           courseEl.style.backgroundColor = newColor;
           courseEl.style.borderColor = newColor;
           courseEl.dataset.color = newColor;
+          updateScheduledCourse(oldName, trimmedNewName, newDuration);
         }
       }
     });
@@ -265,13 +339,11 @@
             end: event.endStr,
         }));
         const availableCourses = Array.from(containerEl.children).map(el => ({
-            title: el.innerText
+            title: getCourseNameFromElement(el),
+            durationMinutes: getDurationFromElement(el)
         }));
-        const settings = {
-            durationMinutes: getCourseDurationMinutes()
-        };
 
-        const dataToExport = JSON.stringify({ calendarEvents, availableCourses, courseColorMap, settings }, null, 2);
+        const dataToExport = JSON.stringify({ calendarEvents, availableCourses, courseColorMap, courseDurationMap }, null, 2);
         const blob = new Blob([dataToExport], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -289,15 +361,11 @@
             throw new Error('无效的文件格式');
         }
 
-        if (data.settings && data.settings.durationMinutes) {
-            durationInput.value = data.settings.durationMinutes;
-            getCourseDurationMinutes();
-        }
-
         // 1. 清理当前状态
         calendar.removeAllEvents();
         containerEl.innerHTML = '';
         courseColorMap = {}; // 清空颜色映射是关键
+        courseDurationMap = {};
 
         // 2. 收集所有唯一的课程名称
         const allCourseNames = new Set([
@@ -310,14 +378,45 @@
             assignOrGetCourseColor(name);
         });
 
+        data.availableCourses.forEach(courseData => {
+            const name = courseData.title.trim();
+            const savedDuration = courseData.durationMinutes || data.courseDurationMap?.[name] || data.settings?.durationMinutes;
+            if (savedDuration) {
+                setCourseDuration(name, savedDuration);
+            }
+        });
+        data.calendarEvents.forEach(eventData => {
+            const name = eventData.title.trim();
+            if (!courseDurationMap[name]) {
+                const start = eventData.start ? new Date(eventData.start) : null;
+                const end = eventData.end ? new Date(eventData.end) : null;
+                const eventDuration = start && end ? Math.round((end - start) / 60000) : null;
+                const savedDuration = data.courseDurationMap?.[name] || eventDuration || data.settings?.durationMinutes;
+                setCourseDuration(name, savedDuration);
+            }
+        });
+        allCourseNames.forEach(name => {
+            if (!courseDurationMap[name]) {
+                setCourseDuration(name, DEFAULT_DURATION_MINUTES);
+            }
+        });
+
         // 4. 使用这个全新的、干净的颜色映射来渲染页面
         data.calendarEvents.forEach(eventData => {
-            const color = courseColorMap[eventData.title.trim()];
-            calendar.addEvent({ ...eventData, backgroundColor: color, borderColor: color });
+            const name = eventData.title.trim();
+            const color = courseColorMap[name];
+            const durationMinutes = courseDurationMap[name] || DEFAULT_DURATION_MINUTES;
+            const normalizedEvent = { ...eventData };
+            if (normalizedEvent.start) {
+                normalizedEvent.end = addMinutes(new Date(normalizedEvent.start), durationMinutes);
+            }
+            calendar.addEvent({ ...normalizedEvent, backgroundColor: color, borderColor: color });
         });
         data.availableCourses.forEach(courseData => {
-            const color = courseColorMap[courseData.title.trim()];
-            const courseEl = createCourseElement(courseData.title, color);
+            const name = courseData.title.trim();
+            const color = courseColorMap[name];
+            const durationMinutes = courseDurationMap[name] || DEFAULT_DURATION_MINUTES;
+            const courseEl = createCourseElement(name, color, durationMinutes);
             containerEl.appendChild(courseEl);
         });
     }
@@ -370,9 +469,11 @@
       itemSelector: '.fc-event',
       eventData: function(eventEl) {
         const color = eventEl.dataset.color;
+        const courseName = getCourseNameFromElement(eventEl);
+        const durationMinutes = getDurationFromElement(eventEl);
         return {
-          title: eventEl.innerText.trim(),
-          duration: formatDuration(getCourseDurationMinutes()),
+          title: courseName,
+          duration: formatDuration(durationMinutes),
           backgroundColor: color,
           borderColor: color
         };
@@ -389,6 +490,7 @@
       initialView: 'timeGridWeek',
       locale: 'zh-cn',
       editable: true,
+      eventDurationEditable: false,
       droppable: true,
       allDaySlot: false,
       nowIndicator: false,
@@ -428,11 +530,26 @@
     function initializeCourseColors() {
       const courseElements = containerEl.querySelectorAll('.fc-event');
       courseElements.forEach(el => {
-        const name = el.innerText.trim();
-        const color = assignOrGetCourseColor(name);
+        const courseName = getCourseNameFromElement(el);
+        const durationMinutes = getDurationFromElement(el);
+        const color = assignOrGetCourseColor(courseName);
+        setCourseDuration(courseName, durationMinutes);
         el.style.backgroundColor = color;
         el.style.borderColor = color;
         el.dataset.color = color;
+        el.dataset.courseName = courseName;
+        el.dataset.durationMinutes = durationMinutes;
+        if (!el.querySelector('.course-name')) {
+          el.innerHTML = '';
+          const nameEl = document.createElement('span');
+          nameEl.className = 'course-name';
+          nameEl.innerText = courseName;
+          const durationEl = document.createElement('span');
+          durationEl.className = 'course-duration';
+          durationEl.innerText = `${durationMinutes} 分钟`;
+          el.appendChild(nameEl);
+          el.appendChild(durationEl);
+        }
       });
     }
 
