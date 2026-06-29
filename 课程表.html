@@ -482,9 +482,10 @@
 
     var calendar = new FullCalendar.Calendar(calendarEl, {
       headerToolbar: { left: '', center: '', right: '' },
-      slotMinTime: '08:50:00',
-      slotMaxTime: '16:55:00',
-      slotDuration: '00:05:00',
+      slotMinTime: '08:30:00',
+      slotMaxTime: '22:00:00',
+      slotDuration: '00:30:00',
+      slotLabelInterval: '00:30:00',
       hiddenDays: [ 6, 0 ],
       dayHeaderFormat: { weekday: 'long' },
       initialView: 'timeGridWeek',
@@ -495,22 +496,6 @@
       allDaySlot: false,
       nowIndicator: false,
       events: [],
-
-      viewDidMount: function(view) {
-        const slots = calendarEl.querySelectorAll('.fc-timegrid-slot');
-        const breakStartTime = '11:20:00';
-        const breakEndTime = '14:30:00';
-
-        slots.forEach(function(slot) {
-          const time = slot.getAttribute('data-time');
-          if (time >= breakStartTime && time < breakEndTime) {
-            const slotRow = slot.closest('tr');
-            if(slotRow) {
-              slotRow.style.display = 'none';
-            }
-          }
-        });
-      },
 
       drop: function(info) {
         if (checkbox.checked) {
