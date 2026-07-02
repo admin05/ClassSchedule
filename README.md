@@ -28,7 +28,7 @@
 
 直接点击开始使用：
 
-[在线预览](https://htmlpreview.github.io/?https://github.com/admin05/ClassSchedule/blob/main/index.html)
+[在线预览](https://raw.githack.com/admin05/ClassSchedule/main/index.html)
 
 直接用浏览器打开 `课程表.html` 即可使用。页面会通过 CDN 加载以下前端库：
 
