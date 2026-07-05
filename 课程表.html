@@ -235,6 +235,15 @@
         return new Date(date.getTime() + minutes * 60 * 1000);
     }
 
+    function getFirstEventStartDate(events) {
+        const firstTimestamp = events
+            .map(eventData => eventData.start ? new Date(eventData.start).getTime() : NaN)
+            .filter(timestamp => !Number.isNaN(timestamp))
+            .sort((a, b) => a - b)[0];
+
+        return firstTimestamp === undefined ? null : new Date(firstTimestamp);
+    }
+
     function getCourseNameFromElement(courseEl) {
         return courseEl.dataset.courseName || courseEl.querySelector('.course-name')?.innerText.trim() || courseEl.innerText.trim();
     }
@@ -454,6 +463,11 @@
                 const courseEl = createCourseElement(name, color, durationMinutes);
                 containerEl.appendChild(courseEl);
             });
+
+            const firstEventStart = getFirstEventStartDate(data.calendarEvents);
+            if (firstEventStart) {
+                calendar.gotoDate(firstEventStart);
+            }
         } finally {
             isLoadingData = false;
         }
