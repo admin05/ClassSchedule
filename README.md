@@ -19,6 +19,8 @@
 ```text
 .
 ├── _redirects      # Cloudflare Pages 根路径跳转规则
+├── _headers        # Cloudflare Pages 无扩展名入口的响应头
+├── 课程表          # Cloudflare Pages 无扩展名入口，内容与课程表.html 保持一致
 ├── 课程表.html     # 主页面，包含样式、交互逻辑和第三方库引用
 ├── README.md      # 项目说明
 └── .gitignore     # 忽略本地生成文件和个人数据
