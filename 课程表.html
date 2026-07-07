@@ -604,20 +604,24 @@
         try {
             const response = await fetch('课程表.json');
             if (!response.ok) {
-                console.log('未找到 "课程表.json" 文件，加载默认课程表。');
-                return;
+                console.log('未找到 "课程表.json" 文件，尝试加载本地保存的课程表。');
+                return false;
             }
             const data = await response.json();
             loadData(data);
             console.log('成功自动导入 "课程表.json"！');
+            return true;
         } catch (error) {
             console.error('自动导入失败:', error);
+            return false;
         }
     }
 
-    if (!loadSavedState()) {
-        autoLoadSchedule();
-    }
+    autoLoadSchedule().then(loadedFromServer => {
+        if (!loadedFromServer) {
+            loadSavedState();
+        }
+    });
   });
 </script>
 
