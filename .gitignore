@@ -1,6 +1,9 @@
 .DS_Store
 Thumbs.db
 
+# Cloudflare Pages uses _redirects to route the site root to 课程表.html.
+index.html
+
 # Local schedule exports may contain personal information.
 课程表.json
 我的课程表.png
