@@ -295,7 +295,14 @@
             durationMinutes: getDurationFromElement(el)
         }));
 
-        return { calendarEvents, availableCourses, courseColorMap, courseDurationMap };
+        return {
+            version: 2,
+            updatedAt: new Date().toISOString(),
+            calendarEvents,
+            availableCourses,
+            courseColorMap,
+            courseDurationMap
+        };
     }
 
     function saveState() {
@@ -309,13 +316,26 @@
         }
     }
 
-    function loadSavedState() {
+    function getSavedScheduleData() {
         try {
             const savedData = localStorage.getItem(STORAGE_KEY);
             if (!savedData) {
+                return null;
+            }
+            return JSON.parse(savedData);
+        } catch (error) {
+            console.warn('读取本地自动保存失败:', error);
+            return null;
+        }
+    }
+
+    function loadSavedState() {
+        try {
+            const savedData = getSavedScheduleData();
+            if (!savedData) {
                 return false;
             }
-            loadData(JSON.parse(savedData), { persist: false });
+            loadData(savedData, { persist: false });
             console.log('已恢复本地自动保存的课程表。');
             return true;
         } catch (error) {
@@ -617,11 +637,14 @@
         }
     }
 
-    autoLoadSchedule().then(loadedFromServer => {
-        if (!loadedFromServer) {
-            loadSavedState();
-        }
-    });
+    const restoredFromLocal = loadSavedState();
+    if (!restoredFromLocal) {
+        autoLoadSchedule().then(loadedFromServer => {
+            if (!loadedFromServer) {
+                saveState();
+            }
+        });
+    }
   });
 </script>
 
