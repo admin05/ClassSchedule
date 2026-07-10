@@ -147,6 +147,8 @@
     var saveImageBtn = document.getElementById('save-image-btn');
     const DEFAULT_DURATION_MINUTES = 40;
     const STORAGE_KEY = 'classSchedule:v1';
+    const REFERENCE_WEEK_START = '2026-01-05';
+    const WEEKDAY_LABELS = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
 
     // --- 【核心修改】扩展颜色库至24种 ---
     const courseColors = [
@@ -235,9 +237,136 @@
         return new Date(date.getTime() + minutes * 60 * 1000);
     }
 
+    function padTimePart(value) {
+        return value.toString().padStart(2, '0');
+    }
+
+    function formatTimeOnly(date) {
+        return `${padTimePart(date.getHours())}:${padTimePart(date.getMinutes())}`;
+    }
+
+    function normalizeTimeValue(value) {
+        if (typeof value !== 'string') {
+            return null;
+        }
+        const match = value.trim().match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+        if (!match) {
+            return null;
+        }
+        const hours = Number.parseInt(match[1], 10);
+        const minutes = Number.parseInt(match[2], 10);
+        if (hours > 23 || minutes > 59) {
+            return null;
+        }
+        return `${padTimePart(hours)}:${padTimePart(minutes)}`;
+    }
+
+    function getWeekdayIndex(value) {
+        if (typeof value === 'number' && Number.isInteger(value)) {
+            if (value >= 0 && value <= 6) {
+                return value;
+            }
+            if (value >= 1 && value <= 7) {
+                return value % 7;
+            }
+        }
+
+        if (typeof value !== 'string') {
+            return null;
+        }
+
+        const aliases = {
+            '星期日': 0, '星期天': 0, '周日': 0, '周天': 0, '日': 0, '天': 0, 'sunday': 0, 'sun': 0,
+            '星期一': 1, '周一': 1, '一': 1, 'monday': 1, 'mon': 1,
+            '星期二': 2, '周二': 2, '二': 2, 'tuesday': 2, 'tue': 2,
+            '星期三': 3, '周三': 3, '三': 3, 'wednesday': 3, 'wed': 3,
+            '星期四': 4, '周四': 4, '四': 4, 'thursday': 4, 'thu': 4,
+            '星期五': 5, '周五': 5, '五': 5, 'friday': 5, 'fri': 5,
+            '星期六': 6, '周六': 6, '六': 6, 'saturday': 6, 'sat': 6
+        };
+        return aliases[value.trim().toLowerCase()] ?? null;
+    }
+
+    function buildReferenceDate(weekday, timeValue) {
+        const weekdayIndex = getWeekdayIndex(weekday);
+        const normalizedTime = normalizeTimeValue(timeValue);
+        if (weekdayIndex === null || !normalizedTime) {
+            return null;
+        }
+
+        const [hours, minutes] = normalizedTime.split(':').map(Number);
+        const date = new Date(`${REFERENCE_WEEK_START}T00:00:00`);
+        const offsetDays = weekdayIndex === 0 ? 6 : weekdayIndex - 1;
+        date.setDate(date.getDate() + offsetDays);
+        date.setHours(hours, minutes, 0, 0);
+        return date;
+    }
+
+    function getEventStartDate(eventData) {
+        if (eventData.weekday !== undefined && eventData.startTime) {
+            return buildReferenceDate(eventData.weekday, eventData.startTime);
+        }
+        if (eventData.dayOfWeek !== undefined && eventData.startTime) {
+            return buildReferenceDate(eventData.dayOfWeek, eventData.startTime);
+        }
+        if (eventData.start) {
+            const start = new Date(eventData.start);
+            return Number.isNaN(start.getTime()) ? null : start;
+        }
+        return null;
+    }
+
+    function getEventEndDate(eventData, startDate, durationMinutes) {
+        const weekday = eventData.weekday ?? eventData.dayOfWeek;
+        if (weekday !== undefined && eventData.endTime) {
+            const end = buildReferenceDate(weekday, eventData.endTime);
+            if (end) {
+                if (startDate && end <= startDate) {
+                    end.setDate(end.getDate() + 1);
+                }
+                return end;
+            }
+        }
+        if (eventData.end) {
+            const end = new Date(eventData.end);
+            if (!Number.isNaN(end.getTime())) {
+                return end;
+            }
+        }
+        return startDate ? addMinutes(startDate, durationMinutes) : null;
+    }
+
+    function normalizeCalendarEvent(eventData, durationMinutes) {
+        const start = getEventStartDate(eventData);
+        if (!start) {
+            return null;
+        }
+        const end = getEventEndDate(eventData, start, durationMinutes);
+        return {
+            title: eventData.title.trim(),
+            start,
+            end
+        };
+    }
+
+    function serializeCalendarEvent(event) {
+        const durationMinutes = courseDurationMap[event.title] || DEFAULT_DURATION_MINUTES;
+        const start = event.start;
+        const end = event.end || addMinutes(start, durationMinutes);
+        return {
+            title: event.title,
+            weekday: WEEKDAY_LABELS[start.getDay()],
+            startTime: formatTimeOnly(start),
+            endTime: formatTimeOnly(end)
+        };
+    }
+
     function getFirstEventStartDate(events) {
         const firstTimestamp = events
-            .map(eventData => eventData.start ? new Date(eventData.start).getTime() : NaN)
+            .map(eventData => {
+                const start = getEventStartDate(eventData);
+                return start ? start.getTime() : NaN;
+            })
             .filter(timestamp => !Number.isNaN(timestamp))
             .sort((a, b) => a - b)[0];
 
@@ -285,11 +414,7 @@
     }
 
     function serializeSchedule() {
-        const calendarEvents = calendar.getEvents().map(event => ({
-            title: event.title,
-            start: event.startStr,
-            end: event.endStr,
-        }));
+        const calendarEvents = calendar.getEvents().map(serializeCalendarEvent);
         const availableCourses = Array.from(containerEl.children).map(el => ({
             title: getCourseNameFromElement(el),
             durationMinutes: getDurationFromElement(el)
@@ -452,8 +577,8 @@
             data.calendarEvents.forEach(eventData => {
                 const name = eventData.title.trim();
                 if (!courseDurationMap[name]) {
-                    const start = eventData.start ? new Date(eventData.start) : null;
-                    const end = eventData.end ? new Date(eventData.end) : null;
+                    const start = getEventStartDate(eventData);
+                    const end = getEventEndDate(eventData, start, DEFAULT_DURATION_MINUTES);
                     const eventDuration = start && end ? Math.round((end - start) / 60000) : null;
                     const savedDuration = data.courseDurationMap?.[name] || eventDuration || data.settings?.durationMinutes;
                     setCourseDuration(name, savedDuration);
@@ -470,11 +595,10 @@
                 const name = eventData.title.trim();
                 const color = courseColorMap[name];
                 const durationMinutes = courseDurationMap[name] || DEFAULT_DURATION_MINUTES;
-                const normalizedEvent = { ...eventData };
-                if (normalizedEvent.start) {
-                    normalizedEvent.end = addMinutes(new Date(normalizedEvent.start), durationMinutes);
+                const normalizedEvent = normalizeCalendarEvent(eventData, durationMinutes);
+                if (normalizedEvent) {
+                    calendar.addEvent({ ...normalizedEvent, backgroundColor: color, borderColor: color });
                 }
-                calendar.addEvent({ ...normalizedEvent, backgroundColor: color, borderColor: color });
             });
             data.availableCourses.forEach(courseData => {
                 const name = courseData.title.trim();
@@ -565,6 +689,7 @@
       slotLabelFormat: { hour: 'numeric', minute: '2-digit', hour12: false },
       dayHeaderFormat: { weekday: 'long' },
       initialView: 'timeGridWeek',
+      initialDate: REFERENCE_WEEK_START,
       locale: 'zh-cn',
       editable: true,
       eventDurationEditable: false,

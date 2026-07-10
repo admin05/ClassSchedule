@@ -57,7 +57,7 @@ http://localhost:8000/课程表.html
 
 页面会自动保存当前浏览器中的课程表。点击“导出JSON”还可以生成 `课程表.json` 作为备份或迁移文件；点击“导入JSON”会用文件内容恢复课表，并立即写入自动保存。导出的文件包含：
 
-- `calendarEvents`：已经排入课程表的课节
+- `calendarEvents`：已经排入课程表的课节，每节课只保存星期、开始时间和结束时间，不绑定具体日期
 - `availableCourses`：左侧待排课程列表
 - `courseColorMap`：课程名称与颜色的映射
 - `courseDurationMap`：课程名称与固定时长的映射
