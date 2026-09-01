@@ -84,12 +84,20 @@
   }
 
   .fc-timegrid-event .fc-event-title {
-    font-size: 18px;
-    font-weight: 500;
+    font-size: 13px;
+    line-height: 1.2;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .fc-timegrid-event .fc-event-time {
-    font-size: 15px;
+    font-size: 11px;
+    line-height: 1.2;
     font-weight: 500;
+  }
+  .fc-timegrid-event .fc-event-main {
+    padding: 2px 4px;
   }
 
 </style>
@@ -197,6 +205,7 @@
         newCourseEl.className = 'fc-event fc-h-event fc-daygrid-event fc-daygrid-block-event';
         newCourseEl.style.backgroundColor = color;
         newCourseEl.style.borderColor = color;
+        newCourseEl.style.color = getContrastingTextColor(color);
         newCourseEl.dataset.color = color;
         newCourseEl.dataset.courseName = trimmedName;
         newCourseEl.dataset.durationMinutes = normalizedDuration;
@@ -259,6 +268,34 @@
             return null;
         }
         return `${padTimePart(hours)}:${padTimePart(minutes)}`;
+    }
+
+    function normalizeHexColor(value) {
+        if (typeof value !== 'string') {
+            return null;
+        }
+        const match = value.trim().match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+        if (!match) {
+            return null;
+        }
+        const hex = match[1].length === 3
+            ? match[1].split('').map(part => part + part).join('')
+            : match[1];
+        return `#${hex.toLowerCase()}`;
+    }
+
+    function getContrastingTextColor(backgroundColor) {
+        const normalizedColor = normalizeHexColor(backgroundColor);
+        if (!normalizedColor) {
+            return '#ffffff';
+        }
+        const channels = [0, 2, 4].map(index => parseInt(normalizedColor.slice(index + 1, index + 3), 16) / 255);
+        const luminance = channels.map(channel => {
+            return channel <= 0.03928 ? channel / 12.92 : Math.pow((channel + 0.055) / 1.055, 2.4);
+        }).reduce((sum, channel, index) => sum + channel * [0.2126, 0.7152, 0.0722][index], 0);
+        const whiteContrast = 1.05 / (luminance + 0.05);
+        const darkContrast = (luminance + 0.05) / 0.05;
+        return whiteContrast >= darkContrast ? '#ffffff' : '#17202a';
     }
 
     function getWeekdayIndex(value) {
@@ -553,7 +590,7 @@
             // 1. 清理当前状态
             calendar.removeAllEvents();
             containerEl.innerHTML = '';
-            courseColorMap = {}; // 清空颜色映射是关键
+            courseColorMap = {};
             courseDurationMap = {};
 
             // 2. 收集所有唯一的课程名称
@@ -562,7 +599,13 @@
                 ...data.calendarEvents.map(e => e.title.trim())
             ]);
 
-            // 3. 为所有课程重新建立一个保证无冲突的颜色映射
+            // 3. 优先恢复导入文件中的颜色，再为新增课程分配不重复的颜色
+            allCourseNames.forEach(name => {
+                const importedColor = normalizeHexColor(data.courseColorMap?.[name]);
+                if (importedColor && !Object.values(courseColorMap).includes(importedColor)) {
+                    courseColorMap[name] = importedColor;
+                }
+            });
             allCourseNames.forEach(name => {
                 assignOrGetCourseColor(name);
             });
@@ -597,7 +640,12 @@
                 const durationMinutes = courseDurationMap[name] || DEFAULT_DURATION_MINUTES;
                 const normalizedEvent = normalizeCalendarEvent(eventData, durationMinutes);
                 if (normalizedEvent) {
-                    calendar.addEvent({ ...normalizedEvent, backgroundColor: color, borderColor: color });
+                    calendar.addEvent({
+                        ...normalizedEvent,
+                        backgroundColor: color,
+                        borderColor: color,
+                        textColor: getContrastingTextColor(color)
+                    });
                 }
             });
             data.availableCourses.forEach(courseData => {
@@ -675,7 +723,8 @@
           title: courseName,
           duration: formatDuration(durationMinutes),
           backgroundColor: color,
-          borderColor: color
+          borderColor: color,
+          textColor: getContrastingTextColor(color)
         };
       }
     });
@@ -691,6 +740,7 @@
       dayHeaderFormat: { weekday: 'long' },
       initialView: 'timeGridWeek',
       initialDate: REFERENCE_WEEK_START,
+      firstDay: 1,
       locale: 'zh-cn',
       editable: true,
       eventDurationEditable: false,
@@ -728,6 +778,7 @@
         setCourseDuration(courseName, durationMinutes);
         el.style.backgroundColor = color;
         el.style.borderColor = color;
+        el.style.color = getContrastingTextColor(color);
         el.dataset.color = color;
         el.dataset.courseName = courseName;
         el.dataset.durationMinutes = durationMinutes;
