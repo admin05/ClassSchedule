@@ -252,7 +252,7 @@
     var exportBtn = document.getElementById('export-btn');
     var importFileEl = document.getElementById('import-file');
     var saveImageBtn = document.getElementById('save-image-btn');
-    const DEFAULT_DURATION_MINUTES = 40;
+    const DEFAULT_DURATION_MINUTES = 45;
     const STORAGE_KEY = 'classSchedule:v2';
     const LEGACY_STORAGE_KEY = 'classSchedule:v1';
     const REFERENCE_WEEK_START = '2026-01-05';
