@@ -121,6 +121,7 @@ internal sealed class MarqueeForm : Form
     public MarqueeForm(string text, Action finished)
     {
         this.finished = finished;
+        AutoScaleMode = AutoScaleMode.Dpi;
         FormBorderStyle = FormBorderStyle.None;
         StartPosition = FormStartPosition.Manual;
         ShowInTaskbar = false;
@@ -128,22 +129,28 @@ internal sealed class MarqueeForm : Form
         BackColor = Color.Black;
         ForeColor = Color.White;
         Width = 760;
-        Height = 86;
 
         var screen = Screen.PrimaryScreen?.WorkingArea ?? new Rectangle(0, 0, 1440, 900);
         Location = new Point(screen.Left + (screen.Width - Width) / 2, screen.Top + 50);
 
+        var marqueeFont = new Font("Microsoft YaHei UI", 24, FontStyle.Bold, GraphicsUnit.Point);
         textLabel = new Label
         {
             AutoSize = true,
             BackColor = Color.Black,
             ForeColor = Color.White,
-            Font = new Font("Microsoft YaHei UI", 24, FontStyle.Bold),
+            Font = marqueeFont,
             Text = text,
-            Top = 20,
             Left = Width
         };
         Controls.Add(textLabel);
+
+        // Size the banner from the rendered glyph height so high-DPI scaling cannot crop text.
+        var textSize = TextRenderer.MeasureText(text, marqueeFont, Size.Empty,
+            TextFormatFlags.NoPadding | TextFormatFlags.SingleLine);
+        Height = Math.Max(86, textSize.Height + 24);
+        textLabel.Top = Math.Max(0, (ClientSize.Height - textLabel.Height) / 2);
+        DpiChanged += (_, _) => textLabel.Top = Math.Max(0, (ClientSize.Height - textLabel.Height) / 2);
 
         animationTimer = new System.Windows.Forms.Timer { Interval = 16 };
         animationTimer.Tick += Animate;
