@@ -179,6 +179,9 @@ private final class ReminderController: NSObject, NSApplicationDelegate {
                 return
             }
             updateNextEvent()
+            if let event = nextEvent, event.start.timeIntervalSinceNow > 5 * 60 {
+                showNextEventPreview(for: event)
+            }
             checkTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
                 self?.checkSchedule()
             }
@@ -224,7 +227,17 @@ private final class ReminderController: NSObject, NSApplicationDelegate {
         first.title = title
     }
 
+    private func showNextEventPreview(for event: ScheduledEvent) {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        showAnnouncement(text: "下一节预告：\(formatter.string(from: event.start)) 上课：\(event.title)")
+    }
+
     private func showAnnouncement(for event: ScheduledEvent, minutesBefore: Int) {
+        showAnnouncement(text: "\(minutesBefore)分钟后上课：\(event.title)")
+    }
+
+    private func showAnnouncement(text: String) {
         announcementWindow?.close()
         let width: CGFloat = 620
         let height: CGFloat = 82
@@ -236,7 +249,6 @@ private final class ReminderController: NSObject, NSApplicationDelegate {
         window.level = .floating
         window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         window.ignoresMouseEvents = true
-        let text = "\(minutesBefore)分钟后上课：\(event.title)"
         let marquee = MarqueeView(text: text) { [weak self, weak window] in
             window?.close()
             if let window { self?.announcementWindow = nil; _ = window }
