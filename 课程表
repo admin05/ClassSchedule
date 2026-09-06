@@ -258,23 +258,53 @@
     const REFERENCE_WEEK_START = '2026-01-05';
     const WEEKDAY_LABELS = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
 
-    // --- 【核心修改】扩展颜色库至24种 ---
+    // --- 课程色板：排除红粉、玫红、紫粉和浅粉等相近色 ---
     const courseColors = [
-        '#e6194b', '#3cb44b', '#ffe119', '#4363d8', '#f58231', '#911eb4', '#46f0f0', '#f032e6',
-        '#bcf60c', '#fabebe', '#008080', '#e6beff', '#9a6324', '#fffac8', '#800000', '#aaffc3',
-        '#808000', '#ffd8b1', '#000075', '#808080', '#000000', '#1f77b4', '#ff7f0e', '#2ca02c'
+        '#3cb44b', '#ffe119', '#4363d8', '#f58231', '#46f0f0', '#bcf60c', '#008080', '#9a6324',
+        '#fffac8', '#aaffc3', '#808000', '#ffd8b1', '#000075', '#808080', '#000000', '#1f77b4',
+        '#ff7f0e', '#2ca02c'
     ];
     let courseColorMap = {};
     let courseDurationMap = {};
     let isLoadingData = false;
     let editingCourseName = null;
 
+    function isPinkLikeColor(value) {
+        const normalizedColor = normalizeHexColor(value);
+        if (!normalizedColor) {
+            return false;
+        }
+        const channels = [0, 2, 4].map(index => parseInt(normalizedColor.slice(index + 1, index + 3), 16) / 255);
+        const max = Math.max(...channels);
+        const min = Math.min(...channels);
+        const delta = max - min;
+        if (delta === 0) {
+            return false;
+        }
+        const lightness = (max + min) / 2;
+        const saturation = delta / (1 - Math.abs(2 * lightness - 1));
+        let hue;
+        if (max === channels[0]) {
+            hue = 60 * (((channels[1] - channels[2]) / delta) % 6);
+        } else if (max === channels[1]) {
+            hue = 60 * ((channels[2] - channels[0]) / delta + 2);
+        } else {
+            hue = 60 * ((channels[0] - channels[1]) / delta + 4);
+        }
+        if (hue < 0) {
+            hue += 360;
+        }
+        const isPinkHue = hue >= 270 || hue <= 18;
+        return saturation >= 0.18 && isPinkHue;
+    }
+
     // --- 【核心重构】全新的、保证颜色唯一的“颜色门卫”函数 ---
     function assignOrGetCourseColor(courseName) {
-        // 如果该课程已经有颜色了，直接返回
-        if (courseColorMap[courseName]) {
+        // 已有颜色只有在不属于粉色系时才继续沿用
+        if (courseColorMap[courseName] && !isPinkLikeColor(courseColorMap[courseName])) {
             return courseColorMap[courseName];
         }
+        delete courseColorMap[courseName];
 
         // 如果是新课程，需要分配一个新颜色
         const usedColors = Object.values(courseColorMap);
@@ -291,7 +321,7 @@
         let randomColor;
         do {
             randomColor = '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
-        } while (usedColors.includes(randomColor)); // 确保随机色也不重复
+        } while (usedColors.includes(randomColor) || isPinkLikeColor(randomColor));
 
         courseColorMap[courseName] = randomColor;
         return randomColor;
@@ -689,7 +719,7 @@
             if (!savedData) {
                 return false;
             }
-            loadData(savedData, { persist: false });
+            loadData(savedData, { persist: true });
             console.log('已恢复本地自动保存的课程表。');
             return true;
         } catch (error) {
@@ -735,8 +765,9 @@
         const oldCourseEl = isEditing ? Array.from(containerEl.children).find(el => {
             return getCourseNameFromElement(el) === oldName;
         }) : null;
-        const color = isEditing
-            ? (courseColorMap[oldName] || assignOrGetCourseColor(trimmedName))
+        const existingColor = isEditing ? courseColorMap[oldName] : null;
+        const color = isEditing && existingColor && !isPinkLikeColor(existingColor)
+            ? existingColor
             : assignOrGetCourseColor(trimmedName);
 
         if (isEditing) {
@@ -820,7 +851,7 @@
             // 3. 优先恢复导入文件中的颜色，再为新增课程分配不重复的颜色
             allCourseNames.forEach(name => {
                 const importedColor = normalizeHexColor(data.courseColorMap?.[name]);
-                if (importedColor && !Object.values(courseColorMap).includes(importedColor)) {
+                if (importedColor && !isPinkLikeColor(importedColor) && !Object.values(courseColorMap).includes(importedColor)) {
                     courseColorMap[name] = importedColor;
                 }
             });
