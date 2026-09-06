@@ -163,7 +163,8 @@ private final class ReminderController: NSObject, NSApplicationDelegate {
     private var announcementWindow: NSWindow?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        NSApp.setActivationPolicy(.accessory)
+        // Keep a Dock icon as a fallback when the MacBook menu bar notch hides status items.
+        NSApp.setActivationPolicy(.regular)
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         if let image = NSImage(systemSymbolName: "bell.fill", accessibilityDescription: "课程提醒") {
             image.isTemplate = true

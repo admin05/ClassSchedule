@@ -27,7 +27,7 @@ cat > "$contents_dir/Info.plist" <<'PLIST'
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>LSUIElement</key>
-    <true/>
+    <false/>
 </dict>
 </plist>
 PLIST
