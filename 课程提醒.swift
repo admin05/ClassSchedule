@@ -114,7 +114,7 @@ private final class MarqueeView: NSView {
         ]
         super.init(frame: .zero)
         wantsLayer = true
-        layer?.backgroundColor = NSColor.systemBlue.withAlphaComponent(0.94).cgColor
+        layer?.backgroundColor = NSColor.black.cgColor
         layer?.cornerRadius = 12
     }
 
@@ -132,7 +132,7 @@ private final class MarqueeView: NSView {
     }
 
     private func advance() {
-        offset -= 8
+        offset -= 2
         if offset + textWidth < 0 {
             completedLoops += 1
             if completedLoops >= 3 {
@@ -164,8 +164,14 @@ private final class ReminderController: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
-        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        statusItem.button?.title = "课程提醒"
+        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+        if let image = NSImage(systemSymbolName: "bell.fill", accessibilityDescription: "课程提醒") {
+            image.isTemplate = true
+            statusItem.button?.image = image
+        } else {
+            statusItem.button?.title = "课"
+        }
+        statusItem.button?.toolTip = "课程提醒"
         statusMenu = NSMenu()
         statusMenu.addItem(NSMenuItem(title: "正在读取课程表…", action: nil, keyEquivalent: ""))
         statusMenu.addItem(NSMenuItem.separator())
