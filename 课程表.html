@@ -260,6 +260,8 @@
     var courseNameInput = document.getElementById('course-name-input');
     var occurrenceList = document.getElementById('occurrence-list');
     var addOccurrenceBtn = document.getElementById('add-occurrence-btn');
+    var courseFormTitle = document.getElementById('course-form-title');
+    var submitCourseBtn = document.getElementById('submit-course-btn');
     var exportBtn = document.getElementById('export-btn');
     var importFileEl = document.getElementById('import-file');
     var saveImageBtn = document.getElementById('save-image-btn');
@@ -278,6 +280,7 @@
     let courseColorMap = {};
     let courseDurationMap = {};
     let isLoadingData = false;
+    let editingCourseName = null;
 
     // --- 【核心重构】全新的、保证颜色唯一的“颜色门卫”函数 ---
     function assignOrGetCourseColor(courseName) {
@@ -320,7 +323,7 @@
         newCourseEl.dataset.color = color;
         newCourseEl.dataset.courseName = trimmedName;
         newCourseEl.dataset.durationMinutes = normalizedDuration;
-        newCourseEl.title = '双击可编辑名称和时长';
+        newCourseEl.title = '双击编辑课程名称和全部上课时段';
         newCourseEl.innerHTML = '';
 
         const nameEl = document.createElement('span');
@@ -345,12 +348,6 @@
             return 240;
         }
         return duration;
-    }
-
-    function formatDuration(minutes) {
-        const hours = Math.floor(minutes / 60).toString().padStart(2, '0');
-        const remainingMinutes = (minutes % 60).toString().padStart(2, '0');
-        return `${hours}:${remainingMinutes}:00`;
     }
 
     function addMinutes(date, minutes) {
@@ -533,14 +530,6 @@
         return normalizeDurationMinutes(courseEl.dataset.durationMinutes || courseDurationMap[courseName]);
     }
 
-    function promptCourseDuration(defaultDuration) {
-        const answer = prompt('请输入课程时长（分钟，5-240）:', normalizeDurationMinutes(defaultDuration));
-        if (answer === null) {
-            return null;
-        }
-        return normalizeDurationMinutes(answer);
-    }
-
     function createOccurrenceRow(defaults = {}) {
         const row = document.createElement('div');
         row.className = 'occurrence-row';
@@ -601,9 +590,46 @@
     }
 
     function resetCourseForm() {
+        editingCourseName = null;
         addCourseForm.reset();
         occurrenceList.innerHTML = '';
         createOccurrenceRow();
+        courseFormTitle.innerText = '新增课程并安排课节';
+        submitCourseBtn.innerText = '添加课程并更新课程表';
+        addCourseBtn.innerText = '重置新增表单';
+    }
+
+    function getCourseOccurrences(courseName) {
+        return calendar.getEvents()
+            .filter(event => event.title === courseName && event.start)
+            .sort((first, second) => first.start - second.start)
+            .map(event => {
+                const fallbackDuration = courseDurationMap[courseName] || DEFAULT_DURATION_MINUTES;
+                const end = event.end || addMinutes(event.start, fallbackDuration);
+                return {
+                    weekday: event.start.getDay(),
+                    startTime: formatTimeOnly(event.start),
+                    durationMinutes: Math.max(5, Math.round((end - event.start) / 60000))
+                };
+            });
+    }
+
+    function openCourseEditor(courseEl) {
+        const courseName = getCourseNameFromElement(courseEl);
+        const occurrences = getCourseOccurrences(courseName);
+        editingCourseName = courseName;
+        courseNameInput.value = courseName;
+        occurrenceList.innerHTML = '';
+        (occurrences.length ? occurrences : [{
+            weekday: 1,
+            startTime: '08:00',
+            durationMinutes: getDurationFromElement(courseEl)
+        }]).forEach(createOccurrenceRow);
+        courseFormTitle.innerText = `编辑课程：${courseName}`;
+        submitCourseBtn.innerText = '保存修改并更新课程表';
+        addCourseBtn.innerText = '取消编辑';
+        courseNameInput.focus();
+        courseFormTitle.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
     function readOccurrenceRows() {
@@ -626,19 +652,6 @@
     function hasCourseName(courseName, ignoredEl) {
         return Array.from(containerEl.children).some(el => {
             return el !== ignoredEl && getCourseNameFromElement(el) === courseName;
-        });
-    }
-
-    function updateScheduledCourse(oldName, newName, durationMinutes) {
-        const normalizedDuration = normalizeDurationMinutes(durationMinutes);
-        calendar.getEvents().forEach(event => {
-            if (event.title !== oldName) {
-                return;
-            }
-            event.setProp('title', newName);
-            if (event.start) {
-                event.setEnd(addMinutes(event.start, normalizedDuration));
-            }
         });
     }
 
@@ -715,7 +728,10 @@
             courseNameInput.focus();
             return;
         }
-        if (hasCourseName(trimmedName)) {
+        const isEditing = editingCourseName !== null;
+        if (hasCourseName(trimmedName, isEditing ? Array.from(containerEl.children).find(el => {
+            return getCourseNameFromElement(el) === editingCourseName;
+        }) : null)) {
             alert('该课程已存在，请直接双击课程列表中的课程进行修改。');
             return;
         }
@@ -728,7 +744,25 @@
             return;
         }
 
-        const color = assignOrGetCourseColor(trimmedName);
+        const oldName = editingCourseName;
+        const oldCourseEl = isEditing ? Array.from(containerEl.children).find(el => {
+            return getCourseNameFromElement(el) === oldName;
+        }) : null;
+        const color = isEditing
+            ? (courseColorMap[oldName] || assignOrGetCourseColor(trimmedName))
+            : assignOrGetCourseColor(trimmedName);
+
+        if (isEditing) {
+            calendar.getEvents()
+                .filter(eventItem => eventItem.title === oldName)
+                .forEach(eventItem => eventItem.remove());
+            if (oldName !== trimmedName) {
+                delete courseColorMap[oldName];
+                delete courseDurationMap[oldName];
+            }
+        }
+
+        courseColorMap[trimmedName] = color;
         setCourseDuration(trimmedName, occurrences[0].durationMinutes);
         occurrences.forEach(occurrence => {
             const start = buildReferenceDate(occurrence.weekday, occurrence.startTime);
@@ -744,46 +778,20 @@
             });
         });
 
-        containerEl.appendChild(createCourseElement(trimmedName, color, occurrences[0].durationMinutes));
+        if (oldCourseEl) {
+            oldCourseEl.replaceWith(createCourseElement(trimmedName, color, occurrences[0].durationMinutes));
+        } else {
+            containerEl.appendChild(createCourseElement(trimmedName, color, occurrences[0].durationMinutes));
+        }
         saveState();
         resetCourseForm();
-        alert(`课程“${trimmedName}”已添加，共安排 ${occurrences.length} 个时段。`);
+        alert(`课程“${trimmedName}”已保存，共安排 ${occurrences.length} 个时段。`);
     });
 
     containerEl.addEventListener('dblclick', function(e) {
       const courseEl = e.target.closest('.fc-event');
       if (courseEl) {
-        const oldName = getCourseNameFromElement(courseEl);
-        const oldDuration = getDurationFromElement(courseEl);
-        const newName = prompt('请修改课程名称:', oldName);
-        if (newName && newName.trim() !== '') {
-          const trimmedNewName = newName.trim();
-          if (trimmedNewName !== oldName && hasCourseName(trimmedNewName, courseEl)) {
-            alert('该课程已存在，请使用另一个课程名称。');
-            return;
-          }
-          const newDuration = promptCourseDuration(oldDuration);
-          if (newDuration === null) {
-            return;
-          }
-          if (trimmedNewName !== oldName) {
-            courseColorMap[trimmedNewName] = courseColorMap[oldName];
-            delete courseDurationMap[oldName];
-            delete courseColorMap[oldName];
-          }
-          const newColor = assignOrGetCourseColor(trimmedNewName);
-          setCourseDuration(trimmedNewName, newDuration);
-
-          courseEl.dataset.courseName = trimmedNewName;
-          courseEl.dataset.durationMinutes = newDuration;
-          courseEl.querySelector('.course-name').innerText = trimmedNewName;
-          courseEl.querySelector('.course-duration').innerText = `${newDuration} 分钟`;
-          courseEl.style.backgroundColor = newColor;
-          courseEl.style.borderColor = newColor;
-          courseEl.dataset.color = newColor;
-          updateScheduledCourse(oldName, trimmedNewName, newDuration);
-          saveState();
-        }
+        openCourseEditor(courseEl);
       }
     });
 
