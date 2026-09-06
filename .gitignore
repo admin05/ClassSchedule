@@ -14,3 +14,8 @@ node_modules/
 dist/
 build/
 .cache/
+
+# Windows .NET build and publish output.
+WindowsCourseReminder/bin/
+WindowsCourseReminder/obj/
+WindowsCourseReminder/发布-win-x64/
