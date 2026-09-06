@@ -226,20 +226,7 @@
   </div>
 
   <h5 style="margin: 22px 0 8px;">课程列表</h5>
-  <div id='external-events-list'>
-    <div class='fc-event' title="双击可编辑" data-course-name="语文" data-duration-minutes="40">
-      <span class="course-name">语文</span>
-      <span class="course-duration">40 分钟</span>
-    </div>
-    <div class='fc-event' title="双击可编辑" data-course-name="数学" data-duration-minutes="40">
-      <span class="course-name">数学</span>
-      <span class="course-duration">40 分钟</span>
-    </div>
-    <div class='fc-event' title="双击可编辑" data-course-name="英语" data-duration-minutes="40">
-      <span class="course-name">英语</span>
-      <span class="course-duration">40 分钟</span>
-    </div>
-  </div>
+  <div id='external-events-list'></div>
 
 </div>
 
