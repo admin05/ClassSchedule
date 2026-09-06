@@ -138,7 +138,10 @@ private final class MarqueeView: NSView {
             if completedLoops >= 3 {
                 timer?.invalidate()
                 timer = nil
-                onFinished()
+                // Finish on the next run-loop turn so the view is not released
+                // while the current animation callback is still unwinding.
+                let completion = onFinished
+                DispatchQueue.main.async(execute: completion)
                 return
             }
             offset = bounds.width
@@ -256,14 +259,18 @@ private final class ReminderController: NSObject, NSApplicationDelegate {
         window.level = .floating
         window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         window.ignoresMouseEvents = true
-        let marquee = MarqueeView(text: text) { [weak self, weak window] in
-            window?.close()
-            if let window { self?.announcementWindow = nil; _ = window }
+        let marquee = MarqueeView(text: text) { [weak self] in
+            self?.finishAnnouncement()
         }
         marquee.frame = NSRect(x: 0, y: 0, width: width, height: height)
         window.contentView = marquee
         announcementWindow = window
         window.orderFrontRegardless()
+    }
+
+    private func finishAnnouncement() {
+        announcementWindow?.orderOut(nil)
+        announcementWindow = nil
     }
 
     private func showError(_ message: String) {
