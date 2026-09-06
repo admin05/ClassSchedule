@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>课程表</title>
+<title>课程表 2.0</title>
 
 <style>
   body {
@@ -12,11 +12,12 @@
     margin: 0;
   }
   #external-events {
-    width: 220px;
-    padding: 0 20px;
+    width: 300px;
+    padding: 0 18px 24px;
     border-right: 1px solid #ddd;
     background-color: #f7f7f7;
     height: 100vh;
+    overflow-y: auto;
   }
   #external-events h4 {
     margin-top: 20px;
@@ -25,7 +26,7 @@
   }
   #external-events .fc-event {
     margin: 10px 0;
-    cursor: grab;
+    cursor: default;
     padding: 5px 8px;
     color: white;
     border-radius: 4px;
@@ -41,6 +42,98 @@
     margin-top: 2px;
     font-size: 12px;
     opacity: 0.9;
+  }
+  .course-form {
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid #ddd;
+  }
+  .course-form h5 {
+    margin: 0 0 12px;
+    font-size: 15px;
+  }
+  .course-form label {
+    display: block;
+    margin-bottom: 5px;
+    color: #495057;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .course-form input,
+  .course-form select {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 34px;
+    padding: 6px 8px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font: inherit;
+  }
+  .course-form-field {
+    margin-bottom: 12px;
+  }
+  .occurrence-list {
+    display: grid;
+    gap: 8px;
+  }
+  .occurrence-row {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr .9fr auto;
+    gap: 5px;
+    align-items: end;
+  }
+  .occurrence-row label {
+    margin: 0;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .occurrence-row input,
+  .occurrence-row select {
+    min-width: 0;
+    min-height: 32px;
+    padding: 4px;
+    font-size: 13px;
+  }
+  .remove-occurrence,
+  #add-occurrence-btn {
+    min-height: 32px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    background: #f8f9fa;
+    color: #495057;
+    cursor: pointer;
+  }
+  .remove-occurrence {
+    width: 32px;
+    padding: 0;
+    font-size: 18px;
+    line-height: 1;
+  }
+  #add-occurrence-btn {
+    width: 100%;
+    margin-top: 10px;
+    padding: 6px;
+  }
+  #submit-course-btn {
+    width: 100%;
+    margin-top: 12px;
+    padding: 9px;
+    border: 0;
+    border-radius: 4px;
+    background: #4363d8;
+    color: #fff;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  #submit-course-btn:hover {
+    background: #3451bd;
+  }
+  .form-hint {
+    margin: 8px 0 0;
+    color: #6c757d;
+    font-size: 12px;
+    line-height: 1.4;
   }
   #calendar-container {
     flex-grow: 1;
@@ -105,16 +198,34 @@
 <body>
 
 <div id="external-events">
-  <h4>待排课程</h4>
+  <h4>课程管理</h4>
 
   <div class="button-group">
-    <button id="add-course-btn">+ 添加课程</button>
+    <button id="add-course-btn" type="button">重置新增表单</button>
     <button id="export-btn">导出JSON</button>
     <label for="import-file" class="button-group-label">导入JSON</label>
     <input type="file" id="import-file" accept=".json" style="display: none;">
     <button id="save-image-btn">存为图片</button>
   </div>
 
+  <div class="course-form" aria-labelledby="course-form-title">
+    <h5 id="course-form-title">新增课程并安排课节</h5>
+    <form id="add-course-form">
+      <div class="course-form-field">
+        <label for="course-name-input">课程名称</label>
+        <input id="course-name-input" name="courseName" type="text" maxlength="40" required placeholder="例如：数学">
+      </div>
+      <div class="course-form-field">
+        <label>上课时段</label>
+        <div id="occurrence-list" class="occurrence-list"></div>
+        <button id="add-occurrence-btn" type="button">+ 添加另一个时段</button>
+        <p class="form-hint">同一门课可以在一周内或同一天安排多次。</p>
+      </div>
+      <button id="submit-course-btn" type="submit">添加课程并更新课程表</button>
+    </form>
+  </div>
+
+  <h5 style="margin: 22px 0 8px;">课程列表</h5>
   <div id='external-events-list'>
     <div class='fc-event' title="双击可编辑" data-course-name="语文" data-duration-minutes="40">
       <span class="course-name">语文</span>
@@ -130,10 +241,6 @@
     </div>
   </div>
 
-   <p style="margin-top: 20px;">
-      <input type="checkbox" id="drop-remove" />
-      <label for="drop-remove">拖拽后移除</label>
-    </p>
 </div>
 
 <div id="calendar-container">
@@ -148,13 +255,17 @@
   document.addEventListener('DOMContentLoaded', function() {
     var calendarEl = document.getElementById('calendar');
     var containerEl = document.getElementById('external-events-list');
-    var checkbox = document.getElementById('drop-remove');
     var addCourseBtn = document.getElementById('add-course-btn');
+    var addCourseForm = document.getElementById('add-course-form');
+    var courseNameInput = document.getElementById('course-name-input');
+    var occurrenceList = document.getElementById('occurrence-list');
+    var addOccurrenceBtn = document.getElementById('add-occurrence-btn');
     var exportBtn = document.getElementById('export-btn');
     var importFileEl = document.getElementById('import-file');
     var saveImageBtn = document.getElementById('save-image-btn');
     const DEFAULT_DURATION_MINUTES = 40;
-    const STORAGE_KEY = 'classSchedule:v1';
+    const STORAGE_KEY = 'classSchedule:v2';
+    const LEGACY_STORAGE_KEY = 'classSchedule:v1';
     const REFERENCE_WEEK_START = '2026-01-05';
     const WEEKDAY_LABELS = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
 
@@ -378,23 +489,26 @@
         if (!start) {
             return null;
         }
-        const end = getEventEndDate(eventData, start, durationMinutes);
+        const normalizedDuration = normalizeDurationMinutes(eventData.durationMinutes || durationMinutes);
+        const end = getEventEndDate(eventData, start, normalizedDuration);
         return {
             title: eventData.title.trim(),
             start,
-            end
+            end,
+            durationMinutes: normalizedDuration
         };
     }
 
     function serializeCalendarEvent(event) {
-        const durationMinutes = courseDurationMap[event.title] || DEFAULT_DURATION_MINUTES;
         const start = event.start;
-        const end = event.end || addMinutes(start, durationMinutes);
+        const end = event.end || addMinutes(start, courseDurationMap[event.title] || DEFAULT_DURATION_MINUTES);
+        const durationMinutes = Math.max(5, Math.round((end - start) / 60000));
         return {
             title: event.title,
             weekday: WEEKDAY_LABELS[start.getDay()],
             startTime: formatTimeOnly(start),
-            endTime: formatTimeOnly(end)
+            endTime: formatTimeOnly(end),
+            durationMinutes
         };
     }
 
@@ -425,6 +539,84 @@
             return null;
         }
         return normalizeDurationMinutes(answer);
+    }
+
+    function createOccurrenceRow(defaults = {}) {
+        const row = document.createElement('div');
+        row.className = 'occurrence-row';
+
+        const weekdayField = document.createElement('div');
+        const weekdayLabel = document.createElement('label');
+        weekdayLabel.innerText = '星期';
+        const weekdaySelect = document.createElement('select');
+        weekdaySelect.name = 'weekday';
+        WEEKDAY_LABELS.forEach((label, index) => {
+            const option = document.createElement('option');
+            option.value = index;
+            option.innerText = label;
+            weekdaySelect.appendChild(option);
+        });
+        weekdaySelect.value = String(defaults.weekday ?? 1);
+        weekdayField.append(weekdayLabel, weekdaySelect);
+
+        const timeField = document.createElement('div');
+        const timeLabel = document.createElement('label');
+        timeLabel.innerText = '开始时间';
+        const timeInput = document.createElement('input');
+        timeInput.type = 'time';
+        timeInput.name = 'startTime';
+        timeInput.required = true;
+        timeInput.value = defaults.startTime || '08:00';
+        timeField.append(timeLabel, timeInput);
+
+        const durationField = document.createElement('div');
+        const durationLabel = document.createElement('label');
+        durationLabel.innerText = '时长(分)';
+        const durationInput = document.createElement('input');
+        durationInput.type = 'number';
+        durationInput.name = 'durationMinutes';
+        durationInput.min = '5';
+        durationInput.max = '240';
+        durationInput.step = '1';
+        durationInput.required = true;
+        durationInput.value = defaults.durationMinutes || DEFAULT_DURATION_MINUTES;
+        durationField.append(durationLabel, durationInput);
+
+        const removeButton = document.createElement('button');
+        removeButton.type = 'button';
+        removeButton.className = 'remove-occurrence';
+        removeButton.title = '删除这个时段';
+        removeButton.innerText = '×';
+        removeButton.addEventListener('click', function() {
+            if (occurrenceList.children.length === 1) {
+                timeInput.value = '08:00';
+                durationInput.value = DEFAULT_DURATION_MINUTES;
+                return;
+            }
+            row.remove();
+        });
+
+        row.append(weekdayField, timeField, durationField, removeButton);
+        occurrenceList.appendChild(row);
+    }
+
+    function resetCourseForm() {
+        addCourseForm.reset();
+        occurrenceList.innerHTML = '';
+        createOccurrenceRow();
+    }
+
+    function readOccurrenceRows() {
+        return Array.from(occurrenceList.children).map(row => {
+            const weekday = Number.parseInt(row.querySelector('[name="weekday"]').value, 10);
+            const startTime = normalizeTimeValue(row.querySelector('[name="startTime"]').value);
+            const durationMinutes = Number.parseInt(row.querySelector('[name="durationMinutes"]').value, 10);
+            if (!Number.isInteger(weekday) || weekday < 0 || weekday > 6 || !startTime ||
+                !Number.isInteger(durationMinutes) || durationMinutes < 5 || durationMinutes > 240) {
+                throw new Error('请检查每个时段的星期、开始时间和课程时长（5-240 分钟）。');
+            }
+            return { weekday, startTime, durationMinutes };
+        });
     }
 
     function setCourseDuration(courseName, durationMinutes) {
@@ -480,7 +672,7 @@
 
     function getSavedScheduleData() {
         try {
-            const savedData = localStorage.getItem(STORAGE_KEY);
+            const savedData = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
             if (!savedData) {
                 return null;
             }
@@ -507,24 +699,55 @@
     }
 
     addCourseBtn.addEventListener('click', function() {
-      const courseName = prompt('请输入新课程的名称:');
-      if (courseName && courseName.trim() !== '') {
-        const trimmedName = courseName.trim();
+        resetCourseForm();
+        courseNameInput.focus();
+    });
+
+    addOccurrenceBtn.addEventListener('click', function() {
+        createOccurrenceRow();
+    });
+
+    addCourseForm.addEventListener('submit', function(event) {
+        event.preventDefault();
+        const trimmedName = courseNameInput.value.trim();
+        if (!trimmedName) {
+            alert('请输入课程名称。');
+            courseNameInput.focus();
+            return;
+        }
         if (hasCourseName(trimmedName)) {
-          alert('该课程已存在，请直接双击现有课程修改时长。');
-          return;
+            alert('该课程已存在，请直接双击课程列表中的课程进行修改。');
+            return;
         }
-        const durationMinutes = promptCourseDuration(DEFAULT_DURATION_MINUTES);
-        if (durationMinutes === null) {
-          return;
+
+        let occurrences;
+        try {
+            occurrences = readOccurrenceRows();
+        } catch (error) {
+            alert(error.message);
+            return;
         }
-        // 所有颜色分配都通过“门卫”函数
-        const newColor = assignOrGetCourseColor(trimmedName);
-        setCourseDuration(trimmedName, durationMinutes);
-        const newCourseEl = createCourseElement(trimmedName, newColor, durationMinutes);
-        containerEl.appendChild(newCourseEl);
+
+        const color = assignOrGetCourseColor(trimmedName);
+        setCourseDuration(trimmedName, occurrences[0].durationMinutes);
+        occurrences.forEach(occurrence => {
+            const start = buildReferenceDate(occurrence.weekday, occurrence.startTime);
+            const end = addMinutes(start, occurrence.durationMinutes);
+            calendar.addEvent({
+                title: trimmedName,
+                start,
+                end,
+                durationMinutes: occurrence.durationMinutes,
+                backgroundColor: color,
+                borderColor: color,
+                textColor: getContrastingTextColor(color)
+            });
+        });
+
+        containerEl.appendChild(createCourseElement(trimmedName, color, occurrences[0].durationMinutes));
         saveState();
-      }
+        resetCourseForm();
+        alert(`课程“${trimmedName}”已添加，共安排 ${occurrences.length} 个时段。`);
     });
 
     containerEl.addEventListener('dblclick', function(e) {
@@ -712,23 +935,7 @@
     });
 
 
-    // --- FullCalendar 的拖拽和日历配置 ---
-    new FullCalendar.Draggable(containerEl, {
-      itemSelector: '.fc-event',
-      eventData: function(eventEl) {
-        const color = eventEl.dataset.color;
-        const courseName = getCourseNameFromElement(eventEl);
-        const durationMinutes = getDurationFromElement(eventEl);
-        return {
-          title: courseName,
-          duration: formatDuration(durationMinutes),
-          backgroundColor: color,
-          borderColor: color,
-          textColor: getContrastingTextColor(color)
-        };
-      }
-    });
-
+    // --- FullCalendar 日历配置 ---
     var calendar = new FullCalendar.Calendar(calendarEl, {
       headerToolbar: { left: '', center: '', right: '' },
       slotMinTime: '08:00:00',
@@ -742,20 +949,15 @@
       initialDate: REFERENCE_WEEK_START,
       firstDay: 1,
       locale: 'zh-cn',
-      editable: true,
+      editable: false,
+      eventStartEditable: false,
       eventDurationEditable: false,
       eventOverlap: true,
-      droppable: true,
+      droppable: false,
       allDaySlot: false,
       nowIndicator: false,
       events: [],
 
-      drop: function(info) {
-        if (checkbox.checked) {
-          info.draggedEl.parentNode.removeChild(info.draggedEl);
-          saveState();
-        }
-      },
       eventClick: function(info) {
         if (confirm("要删除课程 '" + info.event.title + "' 吗?")) {
           info.event.remove();
@@ -767,6 +969,7 @@
     });
 
     calendar.render();
+    createOccurrenceRow();
 
     // 初始化页面时，为默认课程分配颜色
     function initializeCourseColors() {
