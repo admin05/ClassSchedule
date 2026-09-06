@@ -290,10 +290,7 @@ internal sealed class ReminderApplicationContext : ApplicationContext
 
     private void UpdateStatus(string text)
     {
-        if (!notifyIcon.IsDisposed)
-        {
-            statusItem.Text = text;
-        }
+        statusItem.Text = text;
     }
 
     protected override void ExitThreadCore()

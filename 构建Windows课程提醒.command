@@ -5,13 +5,18 @@ project_dir="$(cd "$(dirname "$0")" && pwd)"
 project_file="$project_dir/WindowsCourseReminder/WindowsCourseReminder.csproj"
 publish_dir="$project_dir/WindowsCourseReminder/发布-win-x64"
 
-if ! command -v dotnet >/dev/null 2>&1; then
+dotnet_cmd="$(command -v dotnet || true)"
+if [[ -z "$dotnet_cmd" && -x "/usr/local/share/dotnet/dotnet" ]]; then
+  dotnet_cmd="/usr/local/share/dotnet/dotnet"
+fi
+
+if [[ -z "$dotnet_cmd" ]]; then
   echo "未找到 dotnet。请先安装 .NET 8 SDK："
   echo "https://dotnet.microsoft.com/download/dotnet/8.0"
   exit 1
 fi
 
-dotnet publish "$project_file" \
+"$dotnet_cmd" publish "$project_file" \
   --configuration Release \
   --runtime win-x64 \
   --self-contained true \
