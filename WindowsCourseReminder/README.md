@@ -4,7 +4,7 @@
 
 ## 在 Windows 上构建
 
-1. 安装 [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)。
+1. 在 Windows 电脑上安装 [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)（通常选择 **Windows x64 SDK**）。如果是在 macOS 本机交叉编译，请参阅下面的 macOS 说明。
 2. 将整个项目目录复制到 Windows 电脑。
 3. 在 PowerShell 中进入项目根目录，执行：
 
@@ -18,7 +18,7 @@
 
 ## 在 macOS 上交叉发布 Windows 程序
 
-macOS 可以生成 Windows 自包含程序，但不能在 macOS 上运行或验证 WinForms 界面。先安装 [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)，然后在项目根目录执行：
+macOS 可以生成 Windows 自包含程序，但不能在 macOS 上运行或验证 WinForms 界面。请安装与本机芯片匹配的 [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)：Apple Silicon 选择 **macOS Arm64**，Intel 选择 **macOS x64**。这是 SDK 的主机架构，发布目标仍然是 Windows `win-x64`。然后在项目根目录执行：
 
 ```bash
 ./构建Windows课程提醒.command

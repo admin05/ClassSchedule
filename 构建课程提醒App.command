@@ -7,9 +7,29 @@ contents_dir="$app_dir/Contents"
 macos_dir="$contents_dir/MacOS"
 
 mkdir -p "$macos_dir"
-cache_dir="${TMPDIR:-/tmp}/classschedule-clang-cache"
+build_dir="$(mktemp -d "${TMPDIR:-/tmp}/classschedule-macos-build.XXXXXX")"
+cache_dir="$build_dir/clang-module-cache"
 mkdir -p "$cache_dir"
-CLANG_MODULE_CACHE_PATH="$cache_dir" swiftc "$project_dir/课程提醒.swift" -o "$macos_dir/课程提醒" -framework Cocoa
+trap 'rm -rf "$build_dir"' EXIT
+
+swift_source="$project_dir/课程提醒.swift"
+arm64_binary="$build_dir/课程提醒-arm64"
+x86_64_binary="$build_dir/课程提醒-x86_64"
+
+for target in arm64 x86_64; do
+  case "$target" in
+    arm64) output="$arm64_binary" ;;
+    x86_64) output="$x86_64_binary" ;;
+  esac
+  CLANG_MODULE_CACHE_PATH="$cache_dir" swiftc \
+    -target "$target-apple-macosx11.0" \
+    -sdk "$(xcrun --sdk macosx --show-sdk-path)" \
+    "$swift_source" \
+    -o "$output" \
+    -framework Cocoa
+done
+
+lipo -create "$arm64_binary" "$x86_64_binary" -output "$macos_dir/课程提醒"
 
 cat > "$contents_dir/Info.plist" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>

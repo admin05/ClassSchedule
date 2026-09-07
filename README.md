@@ -75,11 +75,11 @@ http://localhost:8000/课程表.html
 
 项目包含一个原生 macOS 课程提醒程序。它会读取同目录下的 `课程表.json`，常驻在菜单栏。如果启动时下一节课不在未来 5 分钟内，会先滚动 3 遍下一节课的时间和名称；之后等到课前 5、4、3、2、1 分钟分别显示滚动提醒，每次提醒会在屏幕上滚动课程名称 3 遍。
 
-首次使用时双击运行 `构建课程提醒App.command` 编译 `课程提醒.app`，之后直接双击 `课程提醒.app` 即可启动。请将 `课程提醒.app` 与 `课程表.json` 放在同一目录；程序会按课程表中的星期和开始时间循环计算下一节课。菜单栏中的“课程提醒”菜单可以查看下一节课或退出程序。MacBook 菜单栏刘海可能遮挡状态图标，因此 App 也会显示在 Dock 中作为备用入口；它没有主窗口，仍会在后台等待课程提醒。
+首次使用时双击运行 `构建课程提醒App.command` 编译 `课程提醒.app`，脚本会分别生成 arm64（Apple Silicon）和 x86_64（Intel）版本，再合并为 Universal 2 App，之后直接双击 `课程提醒.app` 即可启动。请将 `课程提醒.app` 与 `课程表.json` 放在同一目录；程序会按课程表中的星期和开始时间循环计算下一节课。菜单栏中的“课程提醒”菜单可以查看下一节课或退出程序。MacBook 菜单栏刘海可能遮挡状态图标，因此 App 也会显示在 Dock 中作为备用入口；它没有主窗口，仍会在后台等待课程提醒。
 
 ## Windows 10 课程提醒
 
-项目还包含 Windows 10 版本，位于 `WindowsCourseReminder` 目录。可以在 Windows 上执行 `构建Windows课程提醒.ps1`，也可以在 macOS 上安装 .NET 8 SDK 后双击 `构建Windows课程提醒.command`，交叉发布独立的 `win-x64` 版 `课程提醒.exe`。详细步骤见 `WindowsCourseReminder/README.md`。Windows 版本读取与 macOS 版本相同的 `课程表.json`，运行后驻留在系统托盘。
+项目还包含 Windows 10 版本，位于 `WindowsCourseReminder` 目录。可以在 Windows 上执行 `构建Windows课程提醒.ps1`，也可以在 macOS 上安装 **.NET 8 SDK（macOS Arm64 或 macOS x64 均可，按本机芯片选择）** 后双击 `构建Windows课程提醒.command`，交叉发布独立的 `win-x64` 版 `课程提醒.exe`。下载地址：[.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)。详细步骤见 `WindowsCourseReminder/README.md`。Windows 版本读取与 macOS 版本相同的 `课程表.json`，运行后驻留在系统托盘。
 
 ## 隐私说明
 
