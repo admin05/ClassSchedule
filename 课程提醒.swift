@@ -215,21 +215,27 @@ private final class ReminderController: NSObject, NSApplicationDelegate {
         let minutesBefore = Int(ceil(remaining / 60.0))
         if (1...5).contains(minutesBefore), !announcedMinutes.contains(minutesBefore) {
             announcedMinutes.insert(minutesBefore)
-            showAnnouncement(for: event, minutesBefore: minutesBefore)
+            showAnnouncement(for: event)
         }
-        updateStatus("下节：\(event.title)（\(minutesBefore)分钟后）")
+        updateStatus(eventDisplayText(for: event))
     }
 
     private func updateNextEvent() {
         nextEvent = nextScheduledEvent(events: events)
         announcedMinutes.removeAll()
         if let event = nextEvent {
-            let formatter = DateFormatter()
-            formatter.dateFormat = "HH:mm"
-            updateStatus("下节：\(event.title)（\(formatter.string(from: event.start))）")
+            updateStatus(eventDisplayText(for: event))
         } else {
             updateStatus("今天没有课程")
         }
+    }
+
+    private func eventDisplayText(for event: ScheduledEvent) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        let start = formatter.string(from: event.start)
+        let end = event.end.map(formatter.string(from:)) ?? "--:--"
+        return "下一节：\(event.title)（\(start)-\(end)）"
     }
 
     private func updateStatus(_ title: String) {
@@ -238,21 +244,19 @@ private final class ReminderController: NSObject, NSApplicationDelegate {
     }
 
     private func showNextEventPreview(for event: ScheduledEvent) {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "HH:mm"
-        showAnnouncement(text: "下一节预告：\(formatter.string(from: event.start)) 上课：\(event.title)")
+        showAnnouncement(text: eventDisplayText(for: event))
     }
 
-    private func showAnnouncement(for event: ScheduledEvent, minutesBefore: Int) {
-        showAnnouncement(text: "\(minutesBefore)分钟后上课：\(event.title)")
+    private func showAnnouncement(for event: ScheduledEvent) {
+        showAnnouncement(text: eventDisplayText(for: event))
     }
 
     private func showAnnouncement(text: String) {
         announcementWindow?.close()
-        let width: CGFloat = 620
-        let height: CGFloat = 82
         let screen = NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
-        let frame = NSRect(x: screen.midX - width / 2, y: screen.maxY - height - 70, width: width, height: height)
+        let width = screen.width
+        let height: CGFloat = 82
+        let frame = NSRect(x: screen.minX, y: screen.maxY - height - 70, width: width, height: height)
         let window = NSWindow(contentRect: frame, styleMask: .borderless, backing: .buffered, defer: false)
         window.isOpaque = false
         window.backgroundColor = .clear
