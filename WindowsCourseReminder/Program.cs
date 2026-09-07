@@ -1,5 +1,8 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Drawing.Text;
+using System.Reflection;
+using System.Runtime.InteropServices;
 
 namespace WindowsCourseReminder;
 
@@ -112,9 +115,15 @@ internal static class ScheduleReader
 
 internal sealed class MarqueeForm : Form
 {
+    private const string BundledFontResourceName = "WindowsCourseReminder.Resources.LXGWWenKaiMonoScreen.ttf";
+    private const string BundledFontFamilyName = "LXGW WenKai Mono Screen";
     private readonly Label textLabel;
     private readonly System.Windows.Forms.Timer animationTimer;
     private readonly Action finished;
+    private readonly PrivateFontCollection privateFonts = new();
+    private readonly Font marqueeFont;
+    private byte[]? bundledFontBytes;
+    private GCHandle bundledFontHandle;
     private int completedLoops;
     private bool finishing;
 
@@ -128,12 +137,11 @@ internal sealed class MarqueeForm : Form
         TopMost = true;
         BackColor = Color.Black;
         ForeColor = Color.White;
-        Width = 760;
-
         var screen = Screen.PrimaryScreen?.WorkingArea ?? new Rectangle(0, 0, 1440, 900);
-        Location = new Point(screen.Left + (screen.Width - Width) / 2, screen.Top + 50);
+        Width = screen.Width;
+        Location = new Point(screen.Left, screen.Top + 50);
 
-        var marqueeFont = new Font("Microsoft YaHei UI", 24, FontStyle.Bold, GraphicsUnit.Point);
+        marqueeFont = LoadBundledFont();
         textLabel = new Label
         {
             AutoSize = true,
@@ -141,7 +149,8 @@ internal sealed class MarqueeForm : Form
             ForeColor = Color.White,
             Font = marqueeFont,
             Text = text,
-            Left = Width
+            Left = Width,
+            UseCompatibleTextRendering = true
         };
         Controls.Add(textLabel);
 
@@ -156,6 +165,27 @@ internal sealed class MarqueeForm : Form
         animationTimer.Tick += Animate;
         Shown += (_, _) => animationTimer.Start();
         FormClosed += (_, _) => animationTimer.Dispose();
+    }
+
+    private Font LoadBundledFont()
+    {
+        var assembly = Assembly.GetExecutingAssembly();
+        using var stream = assembly.GetManifestResourceStream(BundledFontResourceName);
+        if (stream is not null)
+        {
+            bundledFontBytes = new byte[stream.Length];
+            stream.ReadExactly(bundledFontBytes);
+            bundledFontHandle = GCHandle.Alloc(bundledFontBytes, GCHandleType.Pinned);
+            privateFonts.AddMemoryFont(bundledFontHandle.AddrOfPinnedObject(), bundledFontBytes.Length);
+            var family = privateFonts.Families.FirstOrDefault(item => item.Name.Equals(BundledFontFamilyName, StringComparison.OrdinalIgnoreCase))
+                ?? privateFonts.Families.FirstOrDefault();
+            if (family is not null)
+            {
+                return new Font(family, 30, FontStyle.Regular, GraphicsUnit.Point);
+            }
+        }
+
+        return new Font("Microsoft YaHei UI", 30, FontStyle.Regular, GraphicsUnit.Point);
     }
 
     private void Animate(object? sender, EventArgs e)
@@ -180,6 +210,21 @@ internal sealed class MarqueeForm : Form
             return;
         }
         textLabel.Left = Width;
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            marqueeFont.Dispose();
+            privateFonts.Dispose();
+            if (bundledFontHandle.IsAllocated)
+            {
+                bundledFontHandle.Free();
+            }
+            bundledFontBytes = null;
+        }
+        base.Dispose(disposing);
     }
 }
 
@@ -234,7 +279,7 @@ internal sealed class ReminderApplicationContext : ApplicationContext
             UpdateNextEvent();
             if (nextEvent is not null && nextEvent.Start > DateTime.Now.AddMinutes(5))
             {
-                ShowMarquee($"下一节预告：{nextEvent.Start:HH:mm} 上课：{nextEvent.Title}");
+                ShowMarquee(EventDisplayText(nextEvent));
             }
             scheduleTimer.Start();
         }
@@ -263,9 +308,9 @@ internal sealed class ReminderApplicationContext : ApplicationContext
         var minutesBefore = (int)Math.Ceiling(remaining.TotalMinutes);
         if (minutesBefore is >= 1 and <= 5 && announcedMinutes.Add(minutesBefore))
         {
-            ShowMarquee($"{minutesBefore}分钟后上课：{nextEvent.Title}");
+            ShowMarquee(EventDisplayText(nextEvent));
         }
-        UpdateStatus($"下节：{nextEvent.Title}（{minutesBefore}分钟后）");
+        UpdateStatus(EventDisplayText(nextEvent));
     }
 
     private void UpdateNextEvent()
@@ -274,7 +319,13 @@ internal sealed class ReminderApplicationContext : ApplicationContext
         announcedMinutes.Clear();
         UpdateStatus(nextEvent is null
             ? "今天没有课程"
-            : $"下节：{nextEvent.Title}（{nextEvent.Start:HH:mm}）");
+            : EventDisplayText(nextEvent));
+    }
+
+    private static string EventDisplayText(ScheduledEvent scheduledEvent)
+    {
+        var end = scheduledEvent.End?.ToString("HH:mm") ?? "--:--";
+        return $"下一节：{scheduledEvent.Title}（{scheduledEvent.Start:HH:mm}-{end}）";
     }
 
     private void ShowMarquee(string text)

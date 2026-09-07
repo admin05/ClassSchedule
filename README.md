@@ -79,7 +79,7 @@ http://localhost:8000/课程表.html
 
 ## Windows 10 课程提醒
 
-项目还包含 Windows 10 版本，位于 `WindowsCourseReminder` 目录。可以在 Windows 上执行 `构建Windows课程提醒.ps1`，也可以在 macOS 上安装 **.NET 8 SDK（macOS Arm64 或 macOS x64 均可，按本机芯片选择）** 后双击 `构建Windows课程提醒.command`，交叉发布独立的 `win-x64` 版 `课程提醒.exe`。下载地址：[.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)。详细步骤见 `WindowsCourseReminder/README.md`。Windows 版本读取与 macOS 版本相同的 `课程表.json`，运行后驻留在系统托盘。
+项目还包含 Windows 10 版本，位于 `WindowsCourseReminder` 目录，并与 macOS 版本保持功能和视觉规范一致。可以在 Windows 上执行 `构建Windows课程提醒.ps1`，也可以在 macOS 上安装 **.NET 8 SDK（macOS Arm64 或 macOS x64 均可，按本机芯片选择）** 后双击 `构建Windows课程提醒.command`，交叉发布独立的 `win-x64` 版 `课程提醒.exe`。下载地址：[.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)。详细步骤见 `WindowsCourseReminder/README.md`。Windows 版本读取与 macOS 版本相同的 `课程表.json`，运行后驻留在系统托盘。
 
 ## 隐私说明
 

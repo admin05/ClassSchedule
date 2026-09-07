@@ -2,6 +2,8 @@
 
 这是课程表的 Windows 10 版本，使用 .NET 8 WinForms 编写。
 
+Windows 版本与 macOS 版本保持功能和视觉规范一致：提示文字、滚动方向与范围、提醒时机和内嵌字体均同步维护。
+
 ## 在 Windows 上构建
 
 1. 在 Windows 电脑上安装 [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)（通常选择 **Windows x64 SDK**）。如果是在 macOS 本机交叉编译，请参阅下面的 macOS 说明。
@@ -40,4 +42,4 @@ cp 课程表.json WindowsCourseReminder/发布-win-x64/课程表.json
 
 生成的 `WindowsCourseReminder/发布-win-x64` 目录可以整体复制到 Windows 10，不需要另外安装 .NET 运行时。
 
-启动时如果下一节课距离超过 5 分钟，会先滚动 3 遍下一节课的时间和名称；进入课前 5 分钟后，再在 5、4、3、2、1 分钟分别滚动提示，每次滚动 3 遍。提醒横幅为黑底白字。
+提示文字统一为“下一节：课程名称（开始时间-结束时间）”。启动时如果下一节课距离超过 5 分钟，会先滚动 3 遍；进入课前 5 分钟后，再在 5、4、3、2、1 分钟分别滚动同样格式的提示，每次滚动 3 遍。提醒横幅为屏幕工作区全宽，从右向左滚动，使用内嵌的 LXGW WenKai Mono Screen 字体，无需在 Windows 电脑另外安装字体。
