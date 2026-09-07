@@ -1,5 +1,16 @@
 import Cocoa
+import CoreText
 import Foundation
+
+private let bundledMarqueeFontName = "LXGW WenKai Mono Screen"
+
+private func registerBundledMarqueeFont() {
+    guard let fontURL = Bundle.main.url(forResource: "LXGWWenKaiMonoScreen", withExtension: "ttf") else {
+        return
+    }
+    var registrationError: Unmanaged<CFError>?
+    CTFontManagerRegisterFontsForURL(fontURL as CFURL, .process, &registrationError)
+}
 
 private struct ScheduleEvent: Decodable {
     let title: String
@@ -108,8 +119,10 @@ private final class MarqueeView: NSView {
     init(text: String, onFinished: @escaping () -> Void) {
         self.text = text
         self.onFinished = onFinished
+        let marqueeFont = NSFont(name: bundledMarqueeFontName, size: 30)
+            ?? NSFont.systemFont(ofSize: 30, weight: .semibold)
         self.textAttributes = [
-            .font: NSFont.systemFont(ofSize: 30, weight: .semibold),
+            .font: marqueeFont,
             .foregroundColor: NSColor.white
         ]
         super.init(frame: .zero)
@@ -305,6 +318,7 @@ if CommandLine.arguments.contains("--check") {
         exit(1)
     }
 } else {
+    registerBundledMarqueeFont()
     let app = NSApplication.shared
     let delegate = ReminderController()
     app.delegate = delegate

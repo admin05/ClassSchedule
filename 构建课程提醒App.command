@@ -5,8 +5,16 @@ project_dir="$(cd "$(dirname "$0")" && pwd)"
 app_dir="$project_dir/课程提醒.app"
 contents_dir="$app_dir/Contents"
 macos_dir="$contents_dir/MacOS"
+resources_dir="$contents_dir/Resources"
 
-mkdir -p "$macos_dir"
+mkdir -p "$macos_dir" "$resources_dir"
+font_source="$project_dir/Resources/LXGWWenKaiMonoScreen.ttf"
+font_destination="$resources_dir/LXGWWenKaiMonoScreen.ttf"
+if [[ ! -f "$font_source" ]]; then
+  echo "未找到内置字体：$font_source" >&2
+  exit 1
+fi
+cp "$font_source" "$font_destination"
 build_dir="$(mktemp -d "${TMPDIR:-/tmp}/classschedule-macos-build.XXXXXX")"
 cache_dir="$build_dir/clang-module-cache"
 mkdir -p "$cache_dir"

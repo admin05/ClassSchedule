@@ -3,9 +3,22 @@
 <plist version="1.0">
 <dict>
 	<key>files</key>
-	<dict/>
+	<dict>
+		<key>Resources/LXGWWenKaiMonoScreen.ttf</key>
+		<data>
+		meeV1YlKpp5oyG3fi7BgvQu6VIc=
+		</data>
+	</dict>
 	<key>files2</key>
-	<dict/>
+	<dict>
+		<key>Resources/LXGWWenKaiMonoScreen.ttf</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			iEsRTVWrTBrHP2UdxjGoINmTIOrAsFjeFGhMNye+n1g=
+			</data>
+		</dict>
+	</dict>
 	<key>rules</key>
 	<dict>
 		<key>^Resources/</key>
