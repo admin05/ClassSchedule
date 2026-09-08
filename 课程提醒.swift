@@ -112,6 +112,7 @@ private final class MarqueeView: NSView {
     private let textAttributes: [NSAttributedString.Key: Any]
     private var textWidth: CGFloat = 0
     private var offset: CGFloat = 0
+    private let scrollSpeed: CGFloat = 2.2
     private var completedLoops = 0
     private var timer: Timer?
     private let onFinished: () -> Void
@@ -145,7 +146,7 @@ private final class MarqueeView: NSView {
     }
 
     private func advance() {
-        offset -= 2
+        offset -= scrollSpeed
         if offset + textWidth < 0 {
             completedLoops += 1
             if completedLoops >= 3 {

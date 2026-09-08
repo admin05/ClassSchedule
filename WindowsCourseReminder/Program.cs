@@ -122,6 +122,8 @@ internal sealed class MarqueeForm : Form
     private readonly Action finished;
     private readonly PrivateFontCollection privateFonts = new();
     private readonly Font marqueeFont;
+    private const double ScrollSpeed = 2.2;
+    private double horizontalOffset;
     private byte[]? bundledFontBytes;
     private GCHandle bundledFontHandle;
     private int completedLoops;
@@ -152,6 +154,7 @@ internal sealed class MarqueeForm : Form
             Left = Width,
             UseCompatibleTextRendering = true
         };
+        horizontalOffset = textLabel.Left;
         Controls.Add(textLabel);
 
         // Size the banner from the rendered glyph height so high-DPI scaling cannot crop text.
@@ -190,7 +193,8 @@ internal sealed class MarqueeForm : Form
 
     private void Animate(object? sender, EventArgs e)
     {
-        textLabel.Left -= 2;
+        horizontalOffset -= ScrollSpeed;
+        textLabel.Left = (int)Math.Round(horizontalOffset);
         if (textLabel.Right >= 0)
         {
             return;
@@ -209,6 +213,7 @@ internal sealed class MarqueeForm : Form
             BeginInvoke(finished);
             return;
         }
+        horizontalOffset = Width;
         textLabel.Left = Width;
     }
 
