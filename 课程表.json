@@ -1,156 +1,476 @@
 {
   "version": 2,
-  "updatedAt": "2026-07-08T01:53:05.690Z",
+  "updatedAt": "2026-09-06T06:19:37.314Z",
   "calendarEvents": [
     {
-      "title": "游泳",
+      "title": "语文",
       "weekday": "星期一",
-      "startTime": "12:30",
-      "endTime": "13:50"
+      "startTime": "08:25",
+      "endTime": "09:10",
+      "durationMinutes": 45
     },
     {
-      "title": "游泳",
+      "title": "语文",
       "weekday": "星期二",
-      "startTime": "12:30",
-      "endTime": "13:50"
+      "startTime": "09:10",
+      "endTime": "09:55",
+      "durationMinutes": 45
     },
     {
-      "title": "游泳",
+      "title": "语文",
       "weekday": "星期三",
-      "startTime": "12:30",
-      "endTime": "13:50"
+      "startTime": "08:00",
+      "endTime": "08:45",
+      "durationMinutes": 45
     },
     {
-      "title": "游泳",
+      "title": "语文",
       "weekday": "星期四",
-      "startTime": "12:30",
-      "endTime": "13:50"
+      "startTime": "10:05",
+      "endTime": "10:50",
+      "durationMinutes": 45
     },
     {
-      "title": "游泳",
+      "title": "语文",
+      "weekday": "星期四",
+      "startTime": "11:00",
+      "endTime": "11:45",
+      "durationMinutes": 45
+    },
+    {
+      "title": "语文",
       "weekday": "星期五",
-      "startTime": "12:30",
-      "endTime": "13:50"
+      "startTime": "09:10",
+      "endTime": "09:55",
+      "durationMinutes": 45
     },
     {
-      "title": "游泳",
-      "weekday": "星期日",
-      "startTime": "12:30",
-      "endTime": "13:50"
-    },
-    {
-      "title": "游泳",
-      "weekday": "星期六",
-      "startTime": "12:30",
-      "endTime": "13:50"
-    },
-    {
-      "title": "奥数",
-      "weekday": "星期日",
-      "startTime": "19:00",
-      "endTime": "21:00"
-    },
-    {
-      "title": "奥数",
+      "title": "晨会",
       "weekday": "星期一",
-      "startTime": "19:00",
-      "endTime": "21:00"
+      "startTime": "08:00",
+      "endTime": "08:25",
+      "durationMinutes": 25
     },
     {
-      "title": "奥数",
+      "title": "大课间",
+      "weekday": "星期一",
+      "startTime": "16:40",
+      "endTime": "17:05",
+      "durationMinutes": 25
+    },
+    {
+      "title": "大课间",
       "weekday": "星期二",
-      "startTime": "19:00",
-      "endTime": "21:00"
+      "startTime": "08:45",
+      "endTime": "09:10",
+      "durationMinutes": 25
     },
     {
-      "title": "奥数",
+      "title": "大课间",
       "weekday": "星期三",
-      "startTime": "19:00",
-      "endTime": "21:00"
+      "startTime": "08:45",
+      "endTime": "09:10",
+      "durationMinutes": 25
     },
     {
-      "title": "奥数",
+      "title": "大课间",
       "weekday": "星期四",
-      "startTime": "19:00",
-      "endTime": "21:00"
+      "startTime": "08:45",
+      "endTime": "09:10",
+      "durationMinutes": 25
     },
     {
-      "title": "奥数",
+      "title": "大课间",
       "weekday": "星期五",
-      "startTime": "19:00",
-      "endTime": "21:00"
+      "startTime": "08:45",
+      "endTime": "09:10",
+      "durationMinutes": 25
     },
     {
-      "title": "奥数",
-      "weekday": "星期六",
-      "startTime": "19:00",
-      "endTime": "21:00"
+      "title": "大课间",
+      "weekday": "星期二",
+      "startTime": "16:40",
+      "endTime": "17:05",
+      "durationMinutes": 25
     },
     {
-      "title": "编程",
+      "title": "大课间",
+      "weekday": "星期三",
+      "startTime": "16:40",
+      "endTime": "17:05",
+      "durationMinutes": 25
+    },
+    {
+      "title": "大课间",
+      "weekday": "星期四",
+      "startTime": "16:40",
+      "endTime": "17:05",
+      "durationMinutes": 25
+    },
+    {
+      "title": "大课间",
       "weekday": "星期五",
-      "startTime": "09:00",
-      "endTime": "11:00"
+      "startTime": "16:40",
+      "endTime": "17:05",
+      "durationMinutes": 25
     },
     {
-      "title": "编程",
-      "weekday": "星期日",
+      "title": "数学",
+      "weekday": "星期一",
+      "startTime": "09:20",
+      "endTime": "10:05",
+      "durationMinutes": 45
+    },
+    {
+      "title": "数学",
+      "weekday": "星期二",
+      "startTime": "11:00",
+      "endTime": "11:45",
+      "durationMinutes": 45
+    },
+    {
+      "title": "数学",
+      "weekday": "星期三",
+      "startTime": "09:10",
+      "endTime": "09:55",
+      "durationMinutes": 45
+    },
+    {
+      "title": "数学",
+      "weekday": "星期四",
+      "startTime": "09:10",
+      "endTime": "09:55",
+      "durationMinutes": 45
+    },
+    {
+      "title": "数学",
+      "weekday": "星期五",
+      "startTime": "08:00",
+      "endTime": "08:45",
+      "durationMinutes": 45
+    },
+    {
+      "title": "英语",
+      "weekday": "星期一",
+      "startTime": "14:00",
+      "endTime": "14:45",
+      "durationMinutes": 45
+    },
+    {
+      "title": "英语",
+      "weekday": "星期二",
+      "startTime": "08:00",
+      "endTime": "08:45",
+      "durationMinutes": 45
+    },
+    {
+      "title": "英语",
+      "weekday": "星期三",
+      "startTime": "10:05",
+      "endTime": "10:50",
+      "durationMinutes": 45
+    },
+    {
+      "title": "英语",
+      "weekday": "星期四",
+      "startTime": "08:00",
+      "endTime": "08:45",
+      "durationMinutes": 45
+    },
+    {
+      "title": "英语",
+      "weekday": "星期五",
+      "startTime": "10:05",
+      "endTime": "10:50",
+      "durationMinutes": 45
+    },
+    {
+      "title": "生物",
+      "weekday": "星期一",
+      "startTime": "10:15",
+      "endTime": "11:00",
+      "durationMinutes": 45
+    },
+    {
+      "title": "生物",
+      "weekday": "星期三",
+      "startTime": "11:00",
+      "endTime": "11:45",
+      "durationMinutes": 45
+    },
+    {
+      "title": "美术",
+      "weekday": "星期一",
+      "startTime": "11:10",
+      "endTime": "11:55",
+      "durationMinutes": 45
+    },
+    {
+      "title": "德法",
+      "weekday": "星期一",
       "startTime": "15:00",
-      "endTime": "17:00"
+      "endTime": "15:45",
+      "durationMinutes": 45
     },
     {
-      "title": "乒乓球",
+      "title": "德法",
+      "weekday": "星期五",
+      "startTime": "15:00",
+      "endTime": "15:45",
+      "durationMinutes": 45
+    },
+    {
+      "title": "地理",
       "weekday": "星期二",
-      "startTime": "09:30",
-      "endTime": "10:30"
+      "startTime": "10:05",
+      "endTime": "10:50",
+      "durationMinutes": 45
     },
     {
-      "title": "乒乓球",
+      "title": "地理",
       "weekday": "星期四",
-      "startTime": "09:30",
-      "endTime": "10:30"
+      "startTime": "15:00",
+      "endTime": "15:45",
+      "durationMinutes": 45
+    },
+    {
+      "title": "历史",
+      "weekday": "星期一",
+      "startTime": "15:55",
+      "endTime": "16:40",
+      "durationMinutes": 45
+    },
+    {
+      "title": "历史",
+      "weekday": "星期三",
+      "startTime": "14:00",
+      "endTime": "14:45",
+      "durationMinutes": 45
+    },
+    {
+      "title": "体育",
+      "weekday": "星期二",
+      "startTime": "14:00",
+      "endTime": "14:45",
+      "durationMinutes": 45
+    },
+    {
+      "title": "体育",
+      "weekday": "星期四",
+      "startTime": "14:00",
+      "endTime": "14:45",
+      "durationMinutes": 45
+    },
+    {
+      "title": "体育",
+      "weekday": "星期五",
+      "startTime": "11:00",
+      "endTime": "11:45",
+      "durationMinutes": 45
+    },
+    {
+      "title": "音乐",
+      "weekday": "星期二",
+      "startTime": "15:00",
+      "endTime": "15:45",
+      "durationMinutes": 45
+    },
+    {
+      "title": "班会",
+      "weekday": "星期二",
+      "startTime": "15:55",
+      "endTime": "16:40",
+      "durationMinutes": 45
+    },
+    {
+      "title": "劳动技能",
+      "weekday": "星期三",
+      "startTime": "15:00",
+      "endTime": "15:45",
+      "durationMinutes": 45
+    },
+    {
+      "title": "课后服务",
+      "weekday": "星期三",
+      "startTime": "15:55",
+      "endTime": "16:40",
+      "durationMinutes": 45
+    },
+    {
+      "title": "心理",
+      "weekday": "星期四",
+      "startTime": "15:55",
+      "endTime": "16:40",
+      "durationMinutes": 45
+    },
+    {
+      "title": "信息",
+      "weekday": "星期五",
+      "startTime": "14:00",
+      "endTime": "14:45",
+      "durationMinutes": 45
+    },
+    {
+      "title": "综合",
+      "weekday": "星期五",
+      "startTime": "15:55",
+      "endTime": "16:40",
+      "durationMinutes": 45
+    },
+    {
+      "title": "课程指导",
+      "weekday": "星期一",
+      "startTime": "17:05",
+      "endTime": "17:50",
+      "durationMinutes": 45
+    },
+    {
+      "title": "课程指导",
+      "weekday": "星期二",
+      "startTime": "17:05",
+      "endTime": "18:00",
+      "durationMinutes": 55
+    },
+    {
+      "title": "课程指导",
+      "weekday": "星期三",
+      "startTime": "17:05",
+      "endTime": "18:00",
+      "durationMinutes": 55
+    },
+    {
+      "title": "课程指导",
+      "weekday": "星期四",
+      "startTime": "17:05",
+      "endTime": "18:00",
+      "durationMinutes": 55
+    },
+    {
+      "title": "课程指导",
+      "weekday": "星期五",
+      "startTime": "17:05",
+      "endTime": "17:45",
+      "durationMinutes": 40
     }
   ],
   "availableCourses": [
     {
-      "title": "羽毛球",
-      "durationMinutes": 90
+      "title": "语文",
+      "durationMinutes": 45
     },
     {
-      "title": "奥数",
-      "durationMinutes": 120
+      "title": "晨会",
+      "durationMinutes": 25
     },
     {
-      "title": "物理",
-      "durationMinutes": 120
+      "title": "大课间",
+      "durationMinutes": 25
     },
     {
-      "title": "游泳",
-      "durationMinutes": 80
+      "title": "数学",
+      "durationMinutes": 45
     },
     {
-      "title": "编程",
-      "durationMinutes": 120
+      "title": "英语",
+      "durationMinutes": 45
     },
     {
-      "title": "乒乓球",
-      "durationMinutes": 60
+      "title": "生物",
+      "durationMinutes": 45
+    },
+    {
+      "title": "美术",
+      "durationMinutes": 45
+    },
+    {
+      "title": "德法",
+      "durationMinutes": 45
+    },
+    {
+      "title": "历史",
+      "durationMinutes": 45
+    },
+    {
+      "title": "地理",
+      "durationMinutes": 45
+    },
+    {
+      "title": "体育",
+      "durationMinutes": 45
+    },
+    {
+      "title": "音乐",
+      "durationMinutes": 45
+    },
+    {
+      "title": "班会",
+      "durationMinutes": 45
+    },
+    {
+      "title": "劳动技能",
+      "durationMinutes": 45
+    },
+    {
+      "title": "课后服务",
+      "durationMinutes": 45
+    },
+    {
+      "title": "心理",
+      "durationMinutes": 45
+    },
+    {
+      "title": "信息",
+      "durationMinutes": 45
+    },
+    {
+      "title": "综合",
+      "durationMinutes": 45
+    },
+    {
+      "title": "课程指导",
+      "durationMinutes": 45
     }
   ],
   "courseColorMap": {
-    "羽毛球": "#e6194b",
-    "奥数": "#3cb44b",
-    "物理": "#ffe119",
-    "游泳": "#4363d8",
-    "编程": "#f58231",
-    "乒乓球": "#911eb4"
+    "晨会": "#3cb44b",
+    "大课间": "#ffe119",
+    "数学": "#4363d8",
+    "英语": "#f58231",
+    "美术": "#46f0f0",
+    "历史": "#bcf60c",
+    "体育": "#008080",
+    "班会": "#9a6324",
+    "劳动技能": "#fffac8",
+    "心理": "#aaffc3",
+    "信息": "#808000",
+    "综合": "#ffd8b1",
+    "课程指导": "#000075",
+    "语文": "#808080",
+    "生物": "#000000",
+    "德法": "#1f77b4",
+    "地理": "#ff7f0e",
+    "音乐": "#2ca02c",
+    "课后服务": "#07cd7f"
   },
   "courseDurationMap": {
-    "羽毛球": 90,
-    "奥数": 120,
-    "物理": 120,
-    "游泳": 80,
-    "编程": 120,
-    "乒乓球": 60
+    "语文": 45,
+    "晨会": 25,
+    "大课间": 25,
+    "数学": 45,
+    "英语": 45,
+    "生物": 45,
+    "美术": 45,
+    "德法": 45,
+    "历史": 45,
+    "地理": 45,
+    "体育": 45,
+    "音乐": 45,
+    "班会": 45,
+    "劳动技能": 45,
+    "课后服务": 45,
+    "心理": 45,
+    "信息": 45,
+    "综合": 45,
+    "课程指导": 45
   }
 }
