@@ -11,11 +11,13 @@ private struct ReminderPalette {
     let text: NSColor
 
     static let presets: [ReminderPalette] = [
-        ReminderPalette(id: "midnight", name: "深夜蓝", background: NSColor(srgbRed: 0.07, green: 0.11, blue: 0.18, alpha: 1), text: NSColor(srgbRed: 0.94, green: 0.97, blue: 1, alpha: 1)),
-        ReminderPalette(id: "ocean", name: "海湾青", background: NSColor(srgbRed: 0.04, green: 0.20, blue: 0.25, alpha: 1), text: NSColor(srgbRed: 0.83, green: 0.98, blue: 0.96, alpha: 1)),
-        ReminderPalette(id: "forest", name: "森林绿", background: NSColor(srgbRed: 0.06, green: 0.23, blue: 0.18, alpha: 1), text: NSColor(srgbRed: 0.91, green: 0.98, blue: 0.87, alpha: 1)),
-        ReminderPalette(id: "copper", name: "铜栗暖棕", background: NSColor(srgbRed: 0.25, green: 0.13, blue: 0.09, alpha: 1), text: NSColor(srgbRed: 1, green: 0.91, blue: 0.70, alpha: 1)),
-        ReminderPalette(id: "twilight", name: "暮光紫", background: NSColor(srgbRed: 0.15, green: 0.11, blue: 0.25, alpha: 1), text: NSColor(srgbRed: 1, green: 0.88, blue: 0.66, alpha: 1))
+        // Palette references: Solarized, Catppuccin, Nord, Dracula, Gruvbox and Tokyo Night.
+        ReminderPalette(id: "solarized-light", name: "浅色 · Solarized Light", background: NSColor(srgbRed: 0.992, green: 0.965, blue: 0.890, alpha: 1), text: NSColor(srgbRed: 0.345, green: 0.431, blue: 0.455, alpha: 1)),
+        ReminderPalette(id: "catppuccin-latte", name: "浅色 · Catppuccin Latte", background: NSColor(srgbRed: 0.937, green: 0.945, blue: 0.961, alpha: 1), text: NSColor(srgbRed: 0.298, green: 0.310, blue: 0.412, alpha: 1)),
+        ReminderPalette(id: "nord-snow", name: "浅色 · Nord Snow Storm", background: NSColor(srgbRed: 0.925, green: 0.937, blue: 0.957, alpha: 1), text: NSColor(srgbRed: 0.180, green: 0.208, blue: 0.251, alpha: 1)),
+        ReminderPalette(id: "dracula", name: "深色 · Dracula", background: NSColor(srgbRed: 0.157, green: 0.165, blue: 0.212, alpha: 1), text: NSColor(srgbRed: 0.973, green: 0.973, blue: 0.973, alpha: 1)),
+        ReminderPalette(id: "gruvbox-dark", name: "深色 · Gruvbox Dark", background: NSColor(srgbRed: 0.157, green: 0.157, blue: 0.141, alpha: 1), text: NSColor(srgbRed: 0.922, green: 0.859, blue: 0.698, alpha: 1)),
+        ReminderPalette(id: "tokyo-night", name: "深色 · Tokyo Night", background: NSColor(srgbRed: 0.102, green: 0.106, blue: 0.149, alpha: 1), text: NSColor(srgbRed: 0.753, green: 0.792, blue: 0.961, alpha: 1))
     ]
 
     static let defaultPalette = presets[0]
@@ -57,12 +59,14 @@ private enum AppearanceStore {
 
     static func load() -> ReminderAppearance {
         let defaults = UserDefaults.standard
-        let paletteID = defaults.string(forKey: paletteKey) ?? ReminderPalette.defaultPalette.id
+        let storedPaletteID = defaults.string(forKey: paletteKey)
+        let isPreset = storedPaletteID.map { id in ReminderPalette.presets.contains(where: { $0.id == id }) } ?? false
+        let paletteID = isPreset ? storedPaletteID! : (storedPaletteID == "custom" ? "custom" : ReminderPalette.defaultPalette.id)
         let palette = ReminderPalette.presets.first(where: { $0.id == paletteID }) ?? ReminderPalette.defaultPalette
         return ReminderAppearance(
             paletteID: paletteID,
-            backgroundColor: defaults.string(forKey: backgroundKey).flatMap(colorFromHex) ?? palette.background,
-            textColor: defaults.string(forKey: textKey).flatMap(colorFromHex) ?? palette.text,
+            backgroundColor: isPreset ? palette.background : (defaults.string(forKey: backgroundKey).flatMap(colorFromHex) ?? palette.background),
+            textColor: isPreset ? palette.text : (defaults.string(forKey: textKey).flatMap(colorFromHex) ?? palette.text),
             messageTemplate: defaults.string(forKey: templateKey).flatMap { $0.isEmpty ? nil : $0 } ?? ReminderAppearance.defaultTemplate
         )
     }
