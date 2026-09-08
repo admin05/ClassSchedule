@@ -392,6 +392,8 @@ private final class ReminderController: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private var statusMenu: NSMenu!
     private var announcementWindow: NSWindow?
+    private var activeAnnouncementText: String?
+    private var activeAnnouncementID: UUID?
     private var appearance = AppearanceStore.load()
     private var appearanceWindow: AppearanceWindowController?
 
@@ -501,6 +503,9 @@ private final class ReminderController: NSObject, NSApplicationDelegate {
 
     private func showAnnouncement(text: String) {
         announcementWindow?.close()
+        activeAnnouncementText = text
+        let announcementID = UUID()
+        activeAnnouncementID = announcementID
         let screen = NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
         let width = screen.width
         let height: CGFloat = 82
@@ -512,7 +517,7 @@ private final class ReminderController: NSObject, NSApplicationDelegate {
         window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         window.ignoresMouseEvents = true
         let marquee = MarqueeView(text: text, appearance: appearance) { [weak self] in
-            self?.finishAnnouncement()
+            self?.finishAnnouncement(id: announcementID)
         }
         marquee.frame = NSRect(x: 0, y: 0, width: width, height: height)
         window.contentView = marquee
@@ -520,9 +525,12 @@ private final class ReminderController: NSObject, NSApplicationDelegate {
         window.orderFrontRegardless()
     }
 
-    private func finishAnnouncement() {
+    private func finishAnnouncement(id: UUID) {
+        guard id == activeAnnouncementID else { return }
         announcementWindow?.orderOut(nil)
         announcementWindow = nil
+        activeAnnouncementText = nil
+        activeAnnouncementID = nil
     }
 
     private func showError(_ message: String) {
@@ -538,6 +546,9 @@ private final class ReminderController: NSObject, NSApplicationDelegate {
             guard let self else { return }
             self.appearance = updated
             AppearanceStore.save(updated)
+            if let activeAnnouncementText = self.activeAnnouncementText {
+                self.showAnnouncement(text: activeAnnouncementText)
+            }
         }
         appearanceWindow = controller
         controller.show()
