@@ -184,7 +184,7 @@ private func nextScheduledEvent(events: [ScheduleEvent], after now: Date = Date(
 }
 
 private final class MarqueeView: NSView {
-    private let text: String
+    private var text: String
     private var textAttributes: [NSAttributedString.Key: Any]
     private var backgroundColor: NSColor
     private var textWidth: CGFloat = 0
@@ -228,7 +228,8 @@ private final class MarqueeView: NSView {
         }
     }
 
-    func apply(appearance: ReminderAppearance) {
+    func apply(text: String, appearance: ReminderAppearance) {
+        self.text = text
         let marqueeFont = NSFont(name: bundledMarqueeFontName, size: 30)
             ?? NSFont.systemFont(ofSize: 30, weight: .semibold)
         textAttributes = [
@@ -238,6 +239,8 @@ private final class MarqueeView: NSView {
         backgroundColor = appearance.backgroundColor
         layer?.backgroundColor = backgroundColor.cgColor
         textWidth = (text as NSString).size(withAttributes: textAttributes).width
+        offset = bounds.width
+        completedLoops = 0
         needsDisplay = true
     }
 
@@ -411,6 +414,7 @@ private final class ReminderController: NSObject, NSApplicationDelegate {
     private var statusMenu: NSMenu!
     private var announcementWindow: NSWindow?
     private weak var activeMarquee: MarqueeView?
+    private var activeAnnouncementText: String?
     private var activeAnnouncementID: UUID?
     private var appearance = AppearanceStore.load()
     private var appearanceWindow: AppearanceWindowController?
@@ -522,6 +526,7 @@ private final class ReminderController: NSObject, NSApplicationDelegate {
     private func showAnnouncement(text: String) {
         announcementWindow?.close()
         activeMarquee = nil
+        activeAnnouncementText = text
         let announcementID = UUID()
         activeAnnouncementID = announcementID
         let screen = NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
@@ -549,6 +554,7 @@ private final class ReminderController: NSObject, NSApplicationDelegate {
         announcementWindow?.orderOut(nil)
         announcementWindow = nil
         activeMarquee = nil
+        activeAnnouncementText = nil
         activeAnnouncementID = nil
     }
 
@@ -565,7 +571,13 @@ private final class ReminderController: NSObject, NSApplicationDelegate {
             guard let self else { return }
             self.appearance = updated
             AppearanceStore.save(updated)
-            self.activeMarquee?.apply(appearance: updated)
+            if self.activeMarquee != nil, let event = self.nextEvent {
+                let updatedText = self.eventDisplayText(for: event)
+                self.activeAnnouncementText = updatedText
+                self.activeMarquee?.apply(text: updatedText, appearance: updated)
+            } else if let activeAnnouncementText = self.activeAnnouncementText {
+                self.activeMarquee?.apply(text: activeAnnouncementText, appearance: updated)
+            }
         }
         appearanceWindow = controller
         controller.show()
