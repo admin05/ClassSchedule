@@ -20,7 +20,7 @@ Windows 版本与 macOS 版本保持功能和视觉规范一致：提示文字�
 
 ## 在 macOS 上交叉发布 Windows 程序
 
-macOS 可以生成 Windows 自包含程序，但不能在 macOS 上运行或验证 WinForms 界面。请安装与本机芯片匹配的 [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)：Apple Silicon 选择 **macOS Arm64**，Intel 选择 **macOS x64**。这是 SDK 的主机架构，发布目标仍然是 Windows `win-x64`。然后在项目根目录执行：
+macOS 可以生成 Windows 自包含程序，但不能在 macOS 上运行或验证 WinForms 界面。请安装与本机芯片匹配的 [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)：Apple Silicon 选择 **macOS Arm64**，Intel 选择 **macOS x64**。这是 SDK 的主机架构，发布目标仍然是 Windows `win-x64`。压缩步骤还需要 `python3`，用于以最高 Deflate 级别打包并确保 Windows 正确识别中文文件名。然后在项目根目录执行：
 
 ```bash
 ./构建Windows课程提醒.command
