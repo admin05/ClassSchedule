@@ -4,6 +4,78 @@ import Foundation
 
 private let bundledMarqueeFontName = "LXGW WenKai Mono Screen"
 
+private struct ReminderPalette {
+    let id: String
+    let name: String
+    let background: NSColor
+    let text: NSColor
+
+    static let presets: [ReminderPalette] = [
+        ReminderPalette(id: "midnight", name: "深夜蓝", background: NSColor(srgbRed: 0.07, green: 0.11, blue: 0.18, alpha: 1), text: NSColor(srgbRed: 0.94, green: 0.97, blue: 1, alpha: 1)),
+        ReminderPalette(id: "ocean", name: "海湾青", background: NSColor(srgbRed: 0.04, green: 0.20, blue: 0.25, alpha: 1), text: NSColor(srgbRed: 0.83, green: 0.98, blue: 0.96, alpha: 1)),
+        ReminderPalette(id: "forest", name: "森林绿", background: NSColor(srgbRed: 0.06, green: 0.23, blue: 0.18, alpha: 1), text: NSColor(srgbRed: 0.91, green: 0.98, blue: 0.87, alpha: 1)),
+        ReminderPalette(id: "copper", name: "铜栗暖棕", background: NSColor(srgbRed: 0.25, green: 0.13, blue: 0.09, alpha: 1), text: NSColor(srgbRed: 1, green: 0.91, blue: 0.70, alpha: 1)),
+        ReminderPalette(id: "twilight", name: "暮光紫", background: NSColor(srgbRed: 0.15, green: 0.11, blue: 0.25, alpha: 1), text: NSColor(srgbRed: 1, green: 0.88, blue: 0.66, alpha: 1))
+    ]
+
+    static let defaultPalette = presets[0]
+}
+
+private struct ReminderAppearance {
+    static let defaultTemplate = "下一节：{courseName}（{startTime}-{endTime}）"
+
+    var paletteID: String
+    var backgroundColor: NSColor
+    var textColor: NSColor
+    var messageTemplate: String
+}
+
+private func colorHex(_ color: NSColor) -> String {
+    guard let rgb = color.usingColorSpace(.sRGB) else { return "FFFFFF" }
+    let red = Int((rgb.redComponent * 255).rounded())
+    let green = Int((rgb.greenComponent * 255).rounded())
+    let blue = Int((rgb.blueComponent * 255).rounded())
+    return String(format: "%02X%02X%02X", red, green, blue)
+}
+
+private func colorFromHex(_ value: String) -> NSColor? {
+    let hex = value.trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "#", with: "")
+    guard hex.count == 6, let number = Int(hex, radix: 16) else { return nil }
+    return NSColor(
+        srgbRed: CGFloat((number >> 16) & 0xFF) / 255,
+        green: CGFloat((number >> 8) & 0xFF) / 255,
+        blue: CGFloat(number & 0xFF) / 255,
+        alpha: 1
+    )
+}
+
+private enum AppearanceStore {
+    private static let paletteKey = "reminder.appearance.palette"
+    private static let backgroundKey = "reminder.appearance.background"
+    private static let textKey = "reminder.appearance.text"
+    private static let templateKey = "reminder.appearance.template"
+
+    static func load() -> ReminderAppearance {
+        let defaults = UserDefaults.standard
+        let paletteID = defaults.string(forKey: paletteKey) ?? ReminderPalette.defaultPalette.id
+        let palette = ReminderPalette.presets.first(where: { $0.id == paletteID }) ?? ReminderPalette.defaultPalette
+        return ReminderAppearance(
+            paletteID: paletteID,
+            backgroundColor: defaults.string(forKey: backgroundKey).flatMap(colorFromHex) ?? palette.background,
+            textColor: defaults.string(forKey: textKey).flatMap(colorFromHex) ?? palette.text,
+            messageTemplate: defaults.string(forKey: templateKey).flatMap { $0.isEmpty ? nil : $0 } ?? ReminderAppearance.defaultTemplate
+        )
+    }
+
+    static func save(_ appearance: ReminderAppearance) {
+        let defaults = UserDefaults.standard
+        defaults.set(appearance.paletteID, forKey: paletteKey)
+        defaults.set(colorHex(appearance.backgroundColor), forKey: backgroundKey)
+        defaults.set(colorHex(appearance.textColor), forKey: textKey)
+        defaults.set(appearance.messageTemplate, forKey: templateKey)
+    }
+}
+
 private func registerBundledMarqueeFont() {
     guard let fontURL = Bundle.main.url(forResource: "LXGWWenKaiMonoScreen", withExtension: "ttf") else {
         return
@@ -110,6 +182,7 @@ private func nextScheduledEvent(events: [ScheduleEvent], after now: Date = Date(
 private final class MarqueeView: NSView {
     private let text: String
     private let textAttributes: [NSAttributedString.Key: Any]
+    private let backgroundColor: NSColor
     private var textWidth: CGFloat = 0
     private var offset: CGFloat = 0
     private let scrollSpeed: CGFloat = 2.2
@@ -117,18 +190,19 @@ private final class MarqueeView: NSView {
     private var timer: Timer?
     private let onFinished: () -> Void
 
-    init(text: String, onFinished: @escaping () -> Void) {
+    init(text: String, appearance: ReminderAppearance, onFinished: @escaping () -> Void) {
         self.text = text
+        self.backgroundColor = appearance.backgroundColor
         self.onFinished = onFinished
         let marqueeFont = NSFont(name: bundledMarqueeFontName, size: 30)
             ?? NSFont.systemFont(ofSize: 30, weight: .semibold)
         self.textAttributes = [
             .font: marqueeFont,
-            .foregroundColor: NSColor.white
+            .foregroundColor: appearance.textColor
         ]
         super.init(frame: .zero)
         wantsLayer = true
-        layer?.backgroundColor = NSColor.black.cgColor
+        layer?.backgroundColor = backgroundColor.cgColor
         layer?.cornerRadius = 12
     }
 
@@ -170,6 +244,142 @@ private final class MarqueeView: NSView {
     }
 }
 
+private final class AppearanceWindowController: NSObject, NSWindowDelegate {
+    private let appearance: ReminderAppearance
+    private let onSave: (ReminderAppearance) -> Void
+    private let palettePopup = NSPopUpButton(frame: .zero, pullsDown: false)
+    private let backgroundWell = NSColorWell(frame: .zero)
+    private let textWell = NSColorWell(frame: .zero)
+    private let templateField = NSTextField(frame: .zero)
+    private var updatingPalette = false
+    private var window: NSWindow?
+
+    init(appearance: ReminderAppearance, onSave: @escaping (ReminderAppearance) -> Void) {
+        self.appearance = appearance
+        self.onSave = onSave
+        super.init()
+    }
+
+    func show() {
+        if let window {
+            window.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            return
+        }
+
+        let content = NSView(frame: NSRect(x: 0, y: 0, width: 520, height: 300))
+        let title = NSTextField(labelWithString: "提醒外观")
+        title.font = NSFont.boldSystemFont(ofSize: 18)
+        title.frame = NSRect(x: 28, y: 252, width: 460, height: 24)
+        content.addSubview(title)
+
+        let paletteLabel = NSTextField(labelWithString: "预设配色")
+        paletteLabel.frame = NSRect(x: 28, y: 208, width: 110, height: 22)
+        content.addSubview(paletteLabel)
+        palettePopup.frame = NSRect(x: 150, y: 204, width: 330, height: 28)
+        palettePopup.removeAllItems()
+        palettePopup.addItems(withTitles: ReminderPalette.presets.map(\.name) + ["自定义"])
+        let selectedIndex = ReminderPalette.presets.firstIndex(where: { $0.id == appearance.paletteID }) ?? ReminderPalette.presets.count
+        palettePopup.selectItem(at: selectedIndex)
+        palettePopup.target = self
+        palettePopup.action = #selector(paletteChanged)
+        content.addSubview(palettePopup)
+
+        let backgroundLabel = NSTextField(labelWithString: "背景色")
+        backgroundLabel.frame = NSRect(x: 28, y: 164, width: 110, height: 22)
+        content.addSubview(backgroundLabel)
+        backgroundWell.frame = NSRect(x: 150, y: 158, width: 52, height: 32)
+        backgroundWell.color = appearance.backgroundColor
+        backgroundWell.target = self
+        backgroundWell.action = #selector(colorWellChanged)
+        content.addSubview(backgroundWell)
+
+        let textLabel = NSTextField(labelWithString: "字体色")
+        textLabel.frame = NSRect(x: 270, y: 164, width: 70, height: 22)
+        content.addSubview(textLabel)
+        textWell.frame = NSRect(x: 350, y: 158, width: 52, height: 32)
+        textWell.color = appearance.textColor
+        textWell.target = self
+        textWell.action = #selector(colorWellChanged)
+        content.addSubview(textWell)
+
+        let templateLabel = NSTextField(labelWithString: "滚动文字")
+        templateLabel.frame = NSRect(x: 28, y: 116, width: 110, height: 22)
+        content.addSubview(templateLabel)
+        templateField.frame = NSRect(x: 150, y: 110, width: 330, height: 28)
+        templateField.stringValue = appearance.messageTemplate
+        templateField.placeholderString = ReminderAppearance.defaultTemplate
+        content.addSubview(templateField)
+
+        let hint = NSTextField(labelWithString: "可用变量：{courseName}  {startTime}  {endTime}  {weekday}")
+        hint.font = NSFont.systemFont(ofSize: 12)
+        hint.textColor = .secondaryLabelColor
+        hint.frame = NSRect(x: 150, y: 82, width: 340, height: 20)
+        content.addSubview(hint)
+
+        let cancel = NSButton(title: "取消", target: self, action: #selector(cancelPressed))
+        cancel.bezelStyle = .rounded
+        cancel.frame = NSRect(x: 300, y: 24, width: 84, height: 32)
+        content.addSubview(cancel)
+        let save = NSButton(title: "保存", target: self, action: #selector(savePressed))
+        save.keyEquivalent = "\r"
+        save.bezelStyle = .rounded
+        save.frame = NSRect(x: 396, y: 24, width: 84, height: 32)
+        content.addSubview(save)
+
+        let newWindow = NSWindow(contentRect: content.frame, styleMask: [.titled, .closable], backing: .buffered, defer: false)
+        newWindow.title = "提醒外观设置"
+        newWindow.contentView = content
+        newWindow.isReleasedWhenClosed = false
+        newWindow.delegate = self
+        window = newWindow
+        newWindow.center()
+        newWindow.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    @objc private func paletteChanged() {
+        guard palettePopup.indexOfSelectedItem < ReminderPalette.presets.count else { return }
+        let palette = ReminderPalette.presets[palettePopup.indexOfSelectedItem]
+        updatingPalette = true
+        backgroundWell.color = palette.background
+        textWell.color = palette.text
+        updatingPalette = false
+    }
+
+    @objc private func colorWellChanged() {
+        guard !updatingPalette else { return }
+        palettePopup.selectItem(at: ReminderPalette.presets.count)
+    }
+
+    @objc private func cancelPressed() {
+        window?.close()
+    }
+
+    @objc private func savePressed() {
+        let template = templateField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !template.isEmpty else {
+            NSSound.beep()
+            return
+        }
+        let selectedPalette = palettePopup.indexOfSelectedItem < ReminderPalette.presets.count
+            ? ReminderPalette.presets[palettePopup.indexOfSelectedItem]
+            : nil
+        let saved = ReminderAppearance(
+            paletteID: selectedPalette?.id ?? "custom",
+            backgroundColor: backgroundWell.color,
+            textColor: textWell.color,
+            messageTemplate: template
+        )
+        onSave(saved)
+        window?.close()
+    }
+
+    func windowWillClose(_ notification: Notification) {
+        window = nil
+    }
+}
+
 private final class ReminderController: NSObject, NSApplicationDelegate {
     private var events: [ScheduleEvent] = []
     private var nextEvent: ScheduledEvent?
@@ -178,6 +388,8 @@ private final class ReminderController: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private var statusMenu: NSMenu!
     private var announcementWindow: NSWindow?
+    private var appearance = AppearanceStore.load()
+    private var appearanceWindow: AppearanceWindowController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Keep a Dock icon as a fallback when the MacBook menu bar notch hides status items.
@@ -192,6 +404,9 @@ private final class ReminderController: NSObject, NSApplicationDelegate {
         statusItem.button?.toolTip = "课程提醒"
         statusMenu = NSMenu()
         statusMenu.addItem(NSMenuItem(title: "正在读取课程表…", action: nil, keyEquivalent: ""))
+        let appearanceItem = NSMenuItem(title: "提醒外观设置…", action: #selector(showAppearanceSettings), keyEquivalent: ",")
+        appearanceItem.target = self
+        statusMenu.addItem(appearanceItem)
         statusMenu.addItem(NSMenuItem.separator())
         statusMenu.addItem(NSMenuItem(title: "退出", action: #selector(quit), keyEquivalent: "q"))
         statusItem.menu = statusMenu
@@ -249,7 +464,22 @@ private final class ReminderController: NSObject, NSApplicationDelegate {
         formatter.dateFormat = "HH:mm"
         let start = formatter.string(from: event.start)
         let end = event.end.map(formatter.string(from:)) ?? "--:--"
-        return "下一节：\(event.title)（\(start)-\(end)）"
+        let weekdayFormatter = DateFormatter()
+        weekdayFormatter.locale = Locale(identifier: "zh_CN")
+        weekdayFormatter.dateFormat = "EEEE"
+        let values = [
+            "{courseName}": event.title,
+            "{课程名称}": event.title,
+            "{startTime}": start,
+            "{上课时间}": start,
+            "{endTime}": end,
+            "{下课时间}": end,
+            "{weekday}": weekdayFormatter.string(from: event.start),
+            "{星期}": weekdayFormatter.string(from: event.start)
+        ]
+        return values.reduce(appearance.messageTemplate) { result, replacement in
+            result.replacingOccurrences(of: replacement.key, with: replacement.value)
+        }
     }
 
     private func updateStatus(_ title: String) {
@@ -277,7 +507,7 @@ private final class ReminderController: NSObject, NSApplicationDelegate {
         window.level = .floating
         window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         window.ignoresMouseEvents = true
-        let marquee = MarqueeView(text: text) { [weak self] in
+        let marquee = MarqueeView(text: text, appearance: appearance) { [weak self] in
             self?.finishAnnouncement()
         }
         marquee.frame = NSRect(x: 0, y: 0, width: width, height: height)
@@ -297,6 +527,16 @@ private final class ReminderController: NSObject, NSApplicationDelegate {
         alert.informativeText = message
         alert.alertStyle = .warning
         alert.runModal()
+    }
+
+    @objc private func showAppearanceSettings() {
+        let controller = AppearanceWindowController(appearance: appearance) { [weak self] updated in
+            guard let self else { return }
+            self.appearance = updated
+            AppearanceStore.save(updated)
+        }
+        appearanceWindow = controller
+        controller.show()
     }
 
     @objc private func quit() {
