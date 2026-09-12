@@ -258,7 +258,7 @@ internal sealed class MarqueeForm : Form
         ForeColor = appearance.TextColor;
         var screen = Screen.PrimaryScreen?.WorkingArea ?? new Rectangle(0, 0, 1440, 900);
         Width = screen.Width;
-        Location = new Point(screen.Left, screen.Top + 50);
+        Location = new Point(screen.Left, screen.Top + 8);
 
         marqueeFont = LoadBundledFont();
         textLabel = new Label
@@ -574,7 +574,7 @@ internal sealed class AppearanceSettingsForm : Form
     {
         this.onSave = onSave;
         Text = "提醒外观设置";
-        ClientSize = new Size(760, 330);
+        ClientSize = new Size(760, 390);
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         MinimizeBox = false;
@@ -607,22 +607,35 @@ internal sealed class AppearanceSettingsForm : Form
 
         AddLabel("滚动文字", new Point(28, 158));
         templateField.Location = new Point(180, 154);
-        templateField.Size = new Size(540, 32);
+        templateField.Multiline = true;
+        templateField.ScrollBars = ScrollBars.None;
+        templateField.WordWrap = true;
+        templateField.Size = new Size(540, 76);
         templateField.Text = appearance.MessageTemplate;
         Controls.Add(templateField);
 
-        var hint = new Label
+        var englishHint = new Label
         {
             AutoSize = false,
             ForeColor = SystemColors.GrayText,
-            Location = new Point(180, 194),
-            Size = new Size(540, 48),
-            Text = "可用变量：{courseName}  {startTime}  {endTime}  {weekday}\n中文变量：{课程名称}  {上课时间}  {下课时间}  {星期}"
+            Location = new Point(180, 238),
+            Size = new Size(540, 26),
+            Text = "可用变量：{courseName}  {startTime}  {endTime}  {weekday}"
         };
-        Controls.Add(hint);
+        Controls.Add(englishHint);
 
-        var cancel = new Button { DialogResult = DialogResult.Cancel, Location = new Point(570, 270), Size = new Size(84, 32), Text = "取消" };
-        var save = new Button { Location = new Point(660, 270), Size = new Size(84, 32), Text = "保存" };
+        var chineseHint = new Label
+        {
+            AutoSize = false,
+            ForeColor = SystemColors.GrayText,
+            Location = new Point(180, 264),
+            Size = new Size(540, 26),
+            Text = "中文变量：{课程名称}  {上课时间}  {下课时间}  {星期}"
+        };
+        Controls.Add(chineseHint);
+
+        var cancel = new Button { DialogResult = DialogResult.Cancel, Location = new Point(570, 320), Size = new Size(84, 32), Text = "取消" };
+        var save = new Button { Location = new Point(660, 320), Size = new Size(84, 32), Text = "保存" };
         save.Click += (_, _) => Save();
         AcceptButton = save;
         CancelButton = cancel;
@@ -645,8 +658,8 @@ internal sealed class AppearanceSettingsForm : Form
         button.AccessibleName = accessibleName;
         button.FlatStyle = FlatStyle.Standard;
         button.Location = location;
-        button.Size = new Size(52, 30);
-        button.Text = "选择";
+        button.Size = new Size(100, 36);
+        button.Text = "选择颜色";
         button.UseVisualStyleBackColor = false;
         button.Cursor = Cursors.Hand;
         button.Click += (_, _) => click();
@@ -683,7 +696,7 @@ internal sealed class AppearanceSettingsForm : Form
 
     private void Save()
     {
-        var template = templateField.Text.Trim();
+        var template = templateField.Text.Trim().ReplaceLineEndings(" ");
         if (template.Length == 0)
         {
             System.Media.SystemSounds.Beep.Play();
