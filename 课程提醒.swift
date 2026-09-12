@@ -458,6 +458,27 @@ private final class ReminderController: NSObject, NSApplicationDelegate {
         }
     }
 
+    func applicationDockMenu(_ sender: NSApplication) -> NSMenu? {
+        let menu = NSMenu()
+        let nextEventItem = NSMenuItem(
+            title: nextEvent.map(eventDisplayText(for:)) ?? "正在读取课程表…",
+            action: nil,
+            keyEquivalent: ""
+        )
+        nextEventItem.isEnabled = false
+        menu.addItem(nextEventItem)
+
+        let appearanceItem = NSMenuItem(title: "提醒外观设置…", action: #selector(showAppearanceSettings), keyEquivalent: "")
+        appearanceItem.target = self
+        menu.addItem(appearanceItem)
+        menu.addItem(NSMenuItem.separator())
+
+        let quitItem = NSMenuItem(title: "退出", action: #selector(quit), keyEquivalent: "")
+        quitItem.target = self
+        menu.addItem(quitItem)
+        return menu
+    }
+
     private func checkSchedule() {
         guard let event = nextEvent else {
             updateNextEvent()

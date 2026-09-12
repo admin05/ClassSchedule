@@ -75,11 +75,11 @@ http://localhost:8000/课程表.html
 
 项目包含一个原生 macOS 课程提醒程序。它会读取同目录下的 `课程表.json`，常驻在菜单栏。如果启动时下一节课不在未来 5 分钟内，会先滚动 3 遍“下一节：课程名称（开始时间-结束时间）”；之后等到课前 5、4、3、2、1 分钟分别显示同样格式的滚动提醒，每次提醒会在屏幕全宽范围内从右向左滚动 3 遍。
 
-首次使用时双击运行 `构建课程提醒App.command` 编译 `课程提醒.app`，脚本会分别生成 arm64（Apple Silicon）和 x86_64（Intel）版本，再合并为 Universal 2 App。提示文字使用项目内置的 LXGW WenKai Mono Screen 字体，运行其他 Mac 时无需另外安装字体。之后直接双击 `课程提醒.app` 即可启动。请将 `课程提醒.app` 与 `课程表.json` 放在同一目录；程序会按课程表中的星期和开始时间循环计算下一节课。菜单栏中的“提醒外观设置…”提供 6 套差异明显的预设配色：3 套浅色（Solarized Light、Catppuccin Latte、Nord Snow Storm）和 3 套深色（Dracula、Gruvbox Dark、Tokyo Night），也可以使用取色器自定义背景色和字体色；滚动文字支持编辑模板，变量可使用 `{courseName}`（课程名称）、`{startTime}`（上课时间）、`{endTime}`（下课时间）和 `{weekday}`（星期）。设置会保存在当前 Mac 的用户偏好中。菜单栏中的“课程提醒”菜单还可以查看下一节课或退出程序。MacBook 菜单栏刘海可能遮挡状态图标，因此 App 也会显示在 Dock 中作为备用入口；它没有主窗口，仍会在后台等待课程提醒。
+首次使用时双击运行 `构建课程提醒App.command` 编译 `课程提醒.app`，脚本会分别生成 arm64（Apple Silicon）和 x86_64（Intel）版本，再合并为 Universal 2 App。提示文字使用项目内置的 LXGW WenKai Mono Screen 字体，运行其他 Mac 时无需另外安装字体。之后直接双击 `课程提醒.app` 即可启动。请将 `课程提醒.app` 与 `课程表.json` 放在同一目录；程序会按课程表中的星期和开始时间循环计算下一节课。菜单栏中的“提醒外观设置…”提供 6 套差异明显的预设配色：3 套浅色（Solarized Light、Catppuccin Latte、Nord Snow Storm）和 3 套深色（Dracula、Gruvbox Dark、Tokyo Night），也可以使用取色器自定义背景色和字体色；滚动文字支持编辑模板，变量可使用 `{courseName}`（课程名称）、`{startTime}`（上课时间）、`{endTime}`（下课时间）和 `{weekday}`（星期）。设置会保存在当前 Mac 的用户偏好中。菜单栏和 Dock 图标的菜单都可以打开外观设置、查看下一节课或退出程序。MacBook 菜单栏刘海可能遮挡状态图标，因此 App 也会显示在 Dock 中作为备用入口；它没有主窗口，仍会在后台等待课程提醒。
 
 ## Windows 10 课程提醒
 
-项目还包含 Windows 10 版本，位于 `WindowsCourseReminder` 目录，并与 macOS 版本保持功能和视觉规范一致。可以在 Windows 上执行 `构建Windows课程提醒.ps1`，也可以在 macOS 上安装 **.NET 8 SDK（macOS Arm64 或 macOS x64 均可，按本机芯片选择）** 后双击 `构建Windows课程提醒.command`。构建脚本会压缩单文件 `win-x64` 程序本身，并生成只含 `课程提醒.exe` 和必要配置 `课程表.json` 的最高压缩级别 ZIP，以后应将这个 ZIP 发布到 GitHub，避免上传未压缩发布目录。下载地址：[.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)。详细步骤见 `WindowsCourseReminder/README.md`。Windows 版本运行后驻留在系统托盘。
+项目还包含 Windows 10 版本，位于 `WindowsCourseReminder` 目录，并与 macOS 版本保持功能和视觉规范一致。可以在 Windows 上执行 `构建Windows课程提醒.ps1`，也可以在 macOS 上安装 **.NET 8 SDK（macOS Arm64 或 macOS x64 均可，按本机芯片选择）** 后双击 `构建Windows课程提醒.command`。构建脚本会压缩单文件 `win-x64` 程序本身，并生成只含 `课程提醒.exe` 和必要配置 `课程表.json` 的最高压缩级别 ZIP，以后应将这个 ZIP 发布到 GitHub，避免上传未压缩发布目录。下载地址：[.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)。详细步骤见 `WindowsCourseReminder/README.md`。Windows 版本运行后驻留在系统托盘，右键托盘图标可以打开与 macOS 对齐的提醒外观设置。
 
 ## 隐私说明
 
