@@ -574,7 +574,7 @@ internal sealed class AppearanceSettingsForm : Form
     {
         this.onSave = onSave;
         Text = "提醒外观设置";
-        ClientSize = new Size(520, 280);
+        ClientSize = new Size(760, 330);
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         MinimizeBox = false;
@@ -592,34 +592,37 @@ internal sealed class AppearanceSettingsForm : Form
 
         AddLabel("预设配色", new Point(28, 66));
         palettePicker.DropDownStyle = ComboBoxStyle.DropDownList;
-        palettePicker.Location = new Point(150, 62);
-        palettePicker.Size = new Size(330, 28);
+        palettePicker.Location = new Point(180, 62);
+        palettePicker.Size = new Size(540, 28);
         palettePicker.Items.AddRange(ReminderPalette.Presets.Select(item => item.Name).Concat(["自定义"]).ToArray());
         palettePicker.SelectedIndexChanged += (_, _) => PaletteChanged();
         Controls.Add(palettePicker);
 
         AddLabel("背景色", new Point(28, 110));
-        ConfigureColorButton(backgroundButton, new Point(150, 106), "背景色", () => ChooseColor(backgroundButton));
-        AddLabel("字体色", new Point(270, 110));
-        ConfigureColorButton(textButton, new Point(350, 106), "字体色", () => ChooseColor(textButton));
+        ConfigureColorButton(backgroundButton, new Point(180, 106), "背景色", () => ChooseColor(backgroundButton));
+        Controls.Add(backgroundButton);
+        AddLabel("字体色", new Point(360, 110));
+        ConfigureColorButton(textButton, new Point(450, 106), "字体色", () => ChooseColor(textButton));
+        Controls.Add(textButton);
 
-        AddLabel("滚动文字", new Point(28, 154));
-        templateField.Location = new Point(150, 150);
-        templateField.Size = new Size(330, 28);
+        AddLabel("滚动文字", new Point(28, 158));
+        templateField.Location = new Point(180, 154);
+        templateField.Size = new Size(540, 32);
         templateField.Text = appearance.MessageTemplate;
         Controls.Add(templateField);
 
         var hint = new Label
         {
-            AutoSize = true,
+            AutoSize = false,
             ForeColor = SystemColors.GrayText,
-            Location = new Point(150, 184),
-            Text = "可用变量：{courseName}  {startTime}  {endTime}  {weekday}"
+            Location = new Point(180, 194),
+            Size = new Size(540, 48),
+            Text = "可用变量：{courseName}  {startTime}  {endTime}  {weekday}\n中文变量：{课程名称}  {上课时间}  {下课时间}  {星期}"
         };
         Controls.Add(hint);
 
-        var cancel = new Button { DialogResult = DialogResult.Cancel, Location = new Point(300, 224), Size = new Size(84, 32), Text = "取消" };
-        var save = new Button { Location = new Point(396, 224), Size = new Size(84, 32), Text = "保存" };
+        var cancel = new Button { DialogResult = DialogResult.Cancel, Location = new Point(570, 270), Size = new Size(84, 32), Text = "取消" };
+        var save = new Button { Location = new Point(660, 270), Size = new Size(84, 32), Text = "保存" };
         save.Click += (_, _) => Save();
         AcceptButton = save;
         CancelButton = cancel;
@@ -643,8 +646,9 @@ internal sealed class AppearanceSettingsForm : Form
         button.FlatStyle = FlatStyle.Standard;
         button.Location = location;
         button.Size = new Size(52, 30);
-        button.Text = "…";
+        button.Text = "选择";
         button.UseVisualStyleBackColor = false;
+        button.Cursor = Cursors.Hand;
         button.Click += (_, _) => click();
     }
 
