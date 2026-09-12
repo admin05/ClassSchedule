@@ -43,6 +43,26 @@
     font-size: 12px;
     opacity: 0.9;
   }
+  #external-events .delete-course-btn {
+    position: absolute;
+    top: 50%;
+    right: 6px;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: 1px solid currentColor;
+    border-radius: 3px;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    text-shadow: none;
+    transform: translateY(-50%);
+  }
+  #external-events .delete-course-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+  }
   .course-form {
     margin-top: 18px;
     padding-top: 16px;
@@ -337,6 +357,8 @@
         newCourseEl.style.backgroundColor = color;
         newCourseEl.style.borderColor = color;
         newCourseEl.style.color = getContrastingTextColor(color);
+        newCourseEl.style.position = 'relative';
+        newCourseEl.style.paddingRight = '38px';
         newCourseEl.dataset.color = color;
         newCourseEl.dataset.courseName = trimmedName;
         newCourseEl.dataset.durationMinutes = normalizedDuration;
@@ -351,9 +373,42 @@
         durationEl.className = 'course-duration';
         durationEl.innerText = `${normalizedDuration} 分钟`;
 
+        const deleteButton = document.createElement('button');
+        deleteButton.type = 'button';
+        deleteButton.className = 'delete-course-btn';
+        deleteButton.title = '删除整门课程';
+        deleteButton.setAttribute('aria-label', `删除课程 ${trimmedName}`);
+        deleteButton.innerText = '×';
+        deleteButton.addEventListener('click', function(event) {
+            event.stopPropagation();
+            deleteCourse(newCourseEl);
+        });
+        deleteButton.addEventListener('dblclick', function(event) {
+            event.stopPropagation();
+        });
+
         newCourseEl.appendChild(nameEl);
         newCourseEl.appendChild(durationEl);
+        newCourseEl.appendChild(deleteButton);
         return newCourseEl;
+    }
+
+    function deleteCourse(courseEl) {
+        const courseName = getCourseNameFromElement(courseEl);
+        if (!confirm(`确定删除课程“${courseName}”吗？这将同时删除右侧课程表中的全部课节。`)) {
+            return;
+        }
+
+        calendar.getEvents()
+            .filter(eventItem => eventItem.title === courseName)
+            .forEach(eventItem => eventItem.remove());
+        courseEl.remove();
+        delete courseColorMap[courseName];
+        delete courseDurationMap[courseName];
+        if (editingCourseName === courseName) {
+            resetCourseForm();
+        }
+        saveState();
     }
 
     function normalizeDurationMinutes(value) {
@@ -985,7 +1040,7 @@
       events: [],
 
       eventClick: function(info) {
-        if (confirm("要删除课程 '" + info.event.title + "' 吗?")) {
+        if (confirm("要删除课程 ‘" + info.event.title + "’ 的这个课节吗？")) {
           info.event.remove();
         }
       },
