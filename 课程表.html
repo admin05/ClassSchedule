@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>课程表 2.0</title>
+<title>课程表 2.1.0</title>
 
 <style>
   body {
@@ -20,9 +20,21 @@
     overflow-y: auto;
   }
   #external-events h4 {
-    margin-top: 20px;
+    margin: 0;
     font-size: 16px;
-    text-align: center;
+    text-align: left;
+  }
+  .sidebar-title {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 20px;
+  }
+  .app-version {
+    color: #6c757d;
+    font-size: 11px;
+    white-space: nowrap;
   }
   #external-events .fc-event {
     margin: 10px 0;
@@ -218,7 +230,10 @@
 <body>
 
 <div id="external-events">
-  <h4>课程管理</h4>
+  <div class="sidebar-title">
+    <h4>课程管理</h4>
+    <span id="app-version" class="app-version">版本 2.1.0</span>
+  </div>
 
   <div class="button-group">
     <button id="add-course-btn" type="button">重置新增表单</button>
@@ -276,7 +291,11 @@
     const STORAGE_KEY = 'classSchedule:v2';
     const LEGACY_STORAGE_KEY = 'classSchedule:v1';
     const REFERENCE_WEEK_START = '2026-01-05';
+    const APP_VERSION = '2.1.0';
     const WEEKDAY_LABELS = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+
+    document.title = `课程表 ${APP_VERSION}`;
+    document.getElementById('app-version').innerText = `版本 ${APP_VERSION}`;
 
     // --- 课程色板：排除红粉、玫红、紫粉和浅粉等相近色 ---
     const courseColors = [
