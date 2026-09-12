@@ -246,7 +246,7 @@ internal sealed class MarqueeForm : Form
     private int completedLoops;
     private bool finishing;
 
-    public MarqueeForm(string text, ReminderAppearance appearance, Action finished)
+    public MarqueeForm(string text, ReminderAppearance appearance, Action showAppearanceSettings, Action exit, Action finished)
     {
         this.finished = finished;
         AutoScaleMode = AutoScaleMode.Dpi;
@@ -260,6 +260,16 @@ internal sealed class MarqueeForm : Form
         Width = screen.Width;
         Location = new Point(screen.Left, screen.Top + 8);
 
+        var contextMenu = new ContextMenuStrip();
+        var appearanceItem = new ToolStripMenuItem("提醒外观设置…");
+        appearanceItem.Click += (_, _) => showAppearanceSettings();
+        var exitItem = new ToolStripMenuItem("退出");
+        exitItem.Click += (_, _) => exit();
+        contextMenu.Items.Add(appearanceItem);
+        contextMenu.Items.Add(new ToolStripSeparator());
+        contextMenu.Items.Add(exitItem);
+        ContextMenuStrip = contextMenu;
+
         marqueeFont = LoadBundledFont();
         textLabel = new Label
         {
@@ -271,6 +281,7 @@ internal sealed class MarqueeForm : Form
             Left = Width,
             UseCompatibleTextRendering = true
         };
+        textLabel.ContextMenuStrip = contextMenu;
         horizontalOffset = textLabel.Left;
         Controls.Add(textLabel);
 
@@ -497,7 +508,7 @@ internal sealed class ReminderApplicationContext : ApplicationContext
     private void ShowMarquee(string text)
     {
         activeMarquee?.Close();
-        activeMarquee = new MarqueeForm(text, appearance, FinishMarquee);
+        activeMarquee = new MarqueeForm(text, appearance, ShowAppearanceSettings, ExitThread, FinishMarquee);
         activeMarquee.FormClosed += (_, _) => activeMarquee = null;
         activeMarquee.Show();
     }
@@ -658,10 +669,11 @@ internal sealed class AppearanceSettingsForm : Form
         button.AccessibleName = accessibleName;
         button.FlatStyle = FlatStyle.Standard;
         button.Location = location;
-        button.Size = new Size(100, 36);
+        button.Size = new Size(140, 36);
         button.Text = "选择颜色";
         button.UseVisualStyleBackColor = false;
         button.Cursor = Cursors.Hand;
+        button.Padding = new Padding(6, 0, 6, 0);
         button.Click += (_, _) => click();
     }
 
