@@ -68,6 +68,8 @@ http://localhost:8000/课程表.html
 
 `课程表.json` 可能包含个人课程安排，默认不会提交到 Git 仓库。需要分享课表时，可以手动发送导出的 JSON 或 PNG 文件。
 
+Cloudflare Pages 使用仓库根目录作为站点资源目录。Windows 发布 ZIP 仅用于 GitHub 下载，并通过 `.assetsignore` 排除在 Pages 部署之外，避免超过 Pages 的单文件大小限制。
+
 ## 适用场景
 
 - 学校或培训机构临时编排课程表
